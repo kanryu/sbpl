@@ -1,0 +1,907 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>sbpl &#8212; sbpl 0.1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">sbpl 0.1.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for sbpl</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">SBPL module for remote printing</span>
+
+<span class="sd">This provides the function of remote printing directly </span>
+<span class="sd">to the printer existing on your LAN by using SBPL </span>
+<span class="sd">(SATO Barcode Printer Language) provided by SATO Corp.</span>
+
+<span class="sd">This enables arbitrary label cutting which can not be controlled</span>
+<span class="sd">by a normal Windows printer.</span>
+
+<span class="sd">This module is a prototype and may not satisfy your work, </span>
+<span class="sd">but since it is Pure Python, you can add and change features yourself.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">json</span>
+
+<span class="n">STX</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\x02</span><span class="s2">&quot;</span>
+<span class="n">ESC</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\x1b</span><span class="s2">&quot;</span>
+<span class="n">ETX</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\x03</span><span class="s2">&quot;</span>
+
+<span class="c1"># SBPL PROGRAMMING REFERENCE For printer model: GL408e / GL412e</span>
+<span class="c1"># TABLE 26: CODE128 DATA VALUES (&lt;ESC&gt;BG)</span>
+<span class="c1"># VALUE | SUBSET A | SUBSET B | SUBSET C</span>
+<span class="c1"># 102   | FNC1 &gt;F  | FNC1 &gt;F  | FNC1 &gt;F</span>
+<span class="c1"># 103   | SUBSET A START CODE &gt;G</span>
+<span class="c1"># 104   | SUBSET B START CODE .H</span>
+<span class="c1"># 105   | SUBSET C START CODE &gt;I</span>
+<span class="n">CODE128_FNC1</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\x66</span><span class="s2">&quot;</span>
+<span class="n">CODE128_START_CODE_A</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\x67</span><span class="s2">&quot;</span>
+<span class="n">CODE128_START_CODE_B</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\x68</span><span class="s2">&quot;</span>
+<span class="n">CODE128_START_CODE_C</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\x69</span><span class="s2">&quot;</span>
+
+<span class="n">B_STX</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;</span><span class="se">\x02</span><span class="s2">&quot;</span>
+<span class="n">B_ESC</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;</span><span class="se">\x1b</span><span class="s2">&quot;</span>
+<span class="n">B_ETX</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;</span><span class="se">\x03</span><span class="s2">&quot;</span>
+<span class="n">B_CODE128_FNC1</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;</span><span class="se">\x67</span><span class="s2">&quot;</span>
+<span class="n">B_CODE128_START_CODE_A</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;</span><span class="se">\x67</span><span class="s2">&quot;</span>
+<span class="n">B_CODE128_START_CODE_B</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;</span><span class="se">\x68</span><span class="s2">&quot;</span>
+<span class="n">B_CODE128_START_CODE_C</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;</span><span class="se">\x69</span><span class="s2">&quot;</span>
+
+<div class="viewcode-block" id="TtfGlyph"><a class="viewcode-back" href="../sbpl.html#sbpl.TtfGlyph">[docs]</a><span class="k">class</span> <span class="nc">TtfGlyph</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Handle glyph data for one character of TrueType font.</span>
+
+<span class="sd">    Fonts are rendered by FreeType-py and kept by instances of this class.</span>
+<span class="sd">    Each glyph is rendered as a 1 bpp monochrome bitmap and issued as a GB command.</span>
+<span class="sd">    It can be cached in units of character strings and SBPL can be actually </span>
+<span class="sd">    generated after calculating the range of output character strings.</span>
+
+<span class="sd">    :param c: The character to render. len(c)==1</span>
+<span class="sd">    :type c: str</span>
+<span class="sd">    :param face: freetype.face</span>
+<span class="sd">    :type face: freetype.face</span>
+<span class="sd">    :param expansion: Font expansion. maybe expansion = XXpt*72</span>
+<span class="sd">    :type expansion: int</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_c</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+    <span class="n">_buffer</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">_bitmap_top</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">_bitmap_left</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">_width</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">_rows</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">_stride</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">_pwidth</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">_pheight</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">_bwidth</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">_bheight</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">_expansion</span> <span class="o">=</span> <span class="mi">0</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">face</span><span class="p">,</span> <span class="n">expansion</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_c</span> <span class="o">=</span> <span class="n">c</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_expansion</span> <span class="o">=</span> <span class="n">expansion</span>
+        <span class="k">if</span> <span class="n">c</span> <span class="o">==</span> <span class="s1">&#39; &#39;</span> <span class="ow">or</span> <span class="n">c</span> <span class="o">==</span> <span class="s1">&#39;¥t&#39;</span><span class="p">:</span> <span class="c1"># 半角スペース</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_width</span> <span class="o">=</span> <span class="n">expansion</span> <span class="o">//</span> <span class="p">(</span><span class="mi">72</span><span class="o">*</span><span class="mi">2</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="n">c</span> <span class="o">==</span> <span class="s1">&#39;　&#39;</span><span class="p">:</span> <span class="c1"># 全角スペース</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_width</span> <span class="o">=</span> <span class="n">expansion</span> <span class="o">//</span> <span class="mi">72</span>
+            <span class="k">return</span>
+
+        <span class="kn">import</span> <span class="nn">freetype</span>
+
+        <span class="n">flags</span> <span class="o">=</span> <span class="n">freetype</span><span class="o">.</span><span class="n">FT_LOAD_FLAGS</span><span class="p">[</span><span class="s1">&#39;FT_LOAD_RENDER&#39;</span><span class="p">]</span> <span class="o">|</span> <span class="n">freetype</span><span class="o">.</span><span class="n">FT_LOAD_FLAGS</span><span class="p">[</span><span class="s1">&#39;FT_LOAD_MONOCHROME&#39;</span><span class="p">]</span> <span class="o">|</span> <span class="n">freetype</span><span class="o">.</span><span class="n">FT_LOAD_TARGETS</span><span class="p">[</span><span class="s1">&#39;FT_LOAD_TARGET_MONO&#39;</span><span class="p">]</span>
+        <span class="c1">#print(&quot;c:&quot;, c)</span>
+        <span class="n">face</span><span class="o">.</span><span class="n">load_char</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">flags</span><span class="p">)</span>
+        <span class="n">glyph</span> <span class="o">=</span> <span class="n">face</span><span class="o">.</span><span class="n">glyph</span>
+        <span class="n">bitmap</span> <span class="o">=</span> <span class="n">glyph</span><span class="o">.</span><span class="n">bitmap</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span> <span class="o">=</span> <span class="n">bitmap</span><span class="o">.</span><span class="n">buffer</span>
+<span class="c1">#        self._horiAdvance = glyph.metrics.horiAdvance</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_bitmap_top</span> <span class="o">=</span> <span class="n">glyph</span><span class="o">.</span><span class="n">bitmap_top</span>       <span class="c1"># offset to the top of the glyph bitmap</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_bitmap_left</span> <span class="o">=</span> <span class="n">glyph</span><span class="o">.</span><span class="n">bitmap_left</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_width</span> <span class="o">=</span> <span class="n">bitmap</span><span class="o">.</span><span class="n">width</span>                <span class="c1"># logical width of the glyph bitmap</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rows</span> <span class="o">=</span> <span class="n">bitmap</span><span class="o">.</span><span class="n">rows</span>                  <span class="c1"># height of the glyph bitmap</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stride</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span><span class="p">)</span> <span class="o">//</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rows</span> <span class="c1"># byte length of each line</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pwidth</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_width</span><span class="o">+</span><span class="p">(</span><span class="mi">64</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span><span class="o">//</span><span class="mi">64</span><span class="o">*</span><span class="mi">64</span> <span class="c1"># output width (packed by 8px, e.g. 63 -&gt; 64, 65 -&gt; 128)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pheight</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rows</span><span class="o">+</span><span class="p">(</span><span class="mi">64</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span><span class="o">//</span><span class="mi">64</span><span class="o">*</span><span class="mi">64</span> <span class="c1"># output height(packed by 8px, e.g. 63 -&gt; 64, 65 -&gt; 128)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pwidth</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pheight</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pwidth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pheight</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pwidth</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pheight</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pheight</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pwidth</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">_bwidth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pwidth</span> <span class="o">//</span> <span class="mi">8</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_bheight</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pheight</span> <span class="o">//</span> <span class="mi">8</span>
+        
+<span class="c1">#        print(&quot;char: &quot;, c, x, y)</span>
+<span class="c1">#        print(&#39;bitmap:&#39;, bitmap.width, self._rows, self._stride, len(bitmap.buffer), self._width)</span>
+<span class="c1">#        print(&#39;pwidth, pheight:&#39;, self._pwidth, self._pheight, self._bwidth, self._bheight)</span>
+<span class="c1">#        print(&#39;metrics.horiAdvance:&#39;, self._horiAdvance)</span>
+    
+<div class="viewcode-block" id="TtfGlyph.offset_x"><a class="viewcode-back" href="../sbpl.html#sbpl.TtfGlyph.offset_x">[docs]</a>    <span class="k">def</span> <span class="nf">offset_x</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns the offset to the next character&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_width</span><span class="o">+</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_bitmap_left</span><span class="o">*</span><span class="mi">2</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TtfGlyph.offset"><a class="viewcode-back" href="../sbpl.html#sbpl.TtfGlyph.offset">[docs]</a>    <span class="k">def</span> <span class="nf">offset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a tuple of the offset to the next character&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_offset_x</span><span class="p">(),</span> <span class="mi">0</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TtfGlyph.offset_top"><a class="viewcode-back" href="../sbpl.html#sbpl.TtfGlyph.offset_top">[docs]</a>    <span class="k">def</span> <span class="nf">offset_top</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Vertical offset of character glyph&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bitmap_top_</span></div>
+
+<div class="viewcode-block" id="TtfGlyph.to_bytes"><a class="viewcode-back" href="../sbpl.html#sbpl.TtfGlyph.to_bytes">[docs]</a>    <span class="k">def</span> <span class="nf">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a raw bitmap of 1bpp specified by (pwidth, pheight)</span>
+
+<span class="sd">        The bitmap requested by the &#39;GB&#39; command is a monochrome 1bpp, </span>
+<span class="sd">        it must be a unit of 8 × 8, and the number of pixels in the vertical </span>
+<span class="sd">        and horizontal directions must be the same.</span>
+
+<span class="sd">        :rtype: bytearray</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">bits</span> <span class="o">=</span> <span class="nb">bytearray</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pheight</span><span class="p">):</span> 
+            <span class="c1"># 下端は0ベタで埋める</span>
+            <span class="k">if</span> <span class="n">r</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rows</span><span class="p">:</span>
+                <span class="n">bits</span> <span class="o">=</span> <span class="n">bits</span> <span class="o">+</span> <span class="nb">bytes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_bwidth</span><span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="c1"># まずグリフデータを左端から書き出す</span>
+            <span class="n">bits</span> <span class="o">=</span> <span class="n">bits</span> <span class="o">+</span> <span class="nb">bytes</span><span class="p">(</span><span class="nb">bytearray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span><span class="p">[</span><span class="n">r</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_stride</span><span class="p">:(</span><span class="n">r</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_stride</span><span class="p">]))</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stride</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bwidth</span><span class="p">:</span> <span class="c1"># 足りない場合は0ベタで埋める</span>
+                <span class="n">bits</span> <span class="o">=</span> <span class="n">bits</span> <span class="o">+</span> <span class="nb">bytes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_bwidth</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stride</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">bits</span></div>
+
+<div class="viewcode-block" id="TtfGlyph.generate"><a class="viewcode-back" href="../sbpl.html#sbpl.TtfGlyph.generate">[docs]</a>    <span class="k">def</span> <span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gen</span><span class="p">,</span> <span class="n">position</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Print the stored glyph data</span>
+
+<span class="sd">        :param gen: Generator</span>
+<span class="sd">        :type gen: LabelGenerator</span>
+<span class="sd">        :param position: Coordinates to be printed</span>
+<span class="sd">        :type position: tuple or list of 2-int</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">gen</span><span class="o">.</span><span class="n">pos</span><span class="p">(</span><span class="n">gen</span><span class="o">.</span><span class="n">glyph_offset</span><span class="p">(</span><span class="n">position</span><span class="p">,</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_bitmap_left</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bitmap_top</span><span class="p">)))</span>
+
+        <span class="n">pt</span> <span class="o">=</span> <span class="s1">&#39;GB</span><span class="si">{0:03d}{1:03d}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_bheight</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bwidth</span><span class="p">)</span>
+        <span class="n">gen</span><span class="o">.</span><span class="n">extend_str</span><span class="p">((</span><span class="n">ESC</span><span class="p">,</span> <span class="n">pt</span><span class="p">))</span>
+        <span class="n">gen</span><span class="o">.</span><span class="n">packets</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_to_bytes</span><span class="p">()</span></div></div>
+
+<div class="viewcode-block" id="LabelGenerator"><a class="viewcode-back" href="../sbpl.html#sbpl.LabelGenerator">[docs]</a><span class="k">class</span> <span class="nc">LabelGenerator</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generate a byte stream to be printed by SBPL.</span>
+
+<span class="sd">    Various commands for printing are held as methods, and by executing them, a byte string of SBPL is generated and held.</span>
+
+<span class="sd">    :param packets: (optional) Cached bytearray will be the printing packet</span>
+<span class="sd">    :type packets: bytearray</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_packets</span> <span class="o">=</span> <span class="nb">bytearray</span><span class="p">()</span>
+    <span class="n">_encoding</span> <span class="o">=</span> <span class="s1">&#39;cp932&#39;</span> <span class="c1"># マイクロソフト拡張のShift_JIS</span>
+    <span class="n">_face</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">_font</span> <span class="o">=</span> <span class="s2">&quot;mplus-1p-black.ttf&quot;</span>
+    <span class="n">_last_expansion</span> <span class="o">=</span> <span class="mi">30</span>
+    <span class="n">_pitch</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">_rotate</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">_bar_ratio</span> <span class="o">=</span> <span class="s1">&#39;B&#39;</span> <span class="c1"># for ratio 1:3</span>
+    <span class="n">_getfontpath</span> <span class="o">=</span> <span class="kc">None</span>
+    
+    <span class="n">_ratio_map</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;1:3&#39;</span><span class="p">:</span> <span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="c1"># NW-7/CODE39/itf/JAN-13/JAN-8/Code 2 of 5/Matrix 2 of 5/MSI/CODE93/UPC-E/BOOKLAND/CODE128/UPC-A/EAN128/POSTNET</span>
+        <span class="s1">&#39;1:2&#39;</span><span class="p">:</span> <span class="s1">&#39;D&#39;</span><span class="p">,</span> <span class="c1"># NW-7/CODE39/itf/JAN-13/JAN-8/Code 2 of 5/Matrix 2 of 5/UPC-A</span>
+        <span class="s1">&#39;2:5&#39;</span><span class="p">:</span> <span class="s1">&#39;BD&#39;</span> <span class="c1"># NW-7/CODE39/itf/JAN-13/JAN-8/Code 2 of 5/Matrix 2 of 5/UPC-A</span>
+    <span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">packets</span><span class="o">=</span><span class="nb">bytearray</span><span class="p">()):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_packets</span> <span class="o">=</span> <span class="n">packets</span>
+
+<div class="viewcode-block" id="LabelGenerator.extend_str"><a class="viewcode-back" href="../sbpl.html#sbpl.LabelGenerator.extend_str">[docs]</a>    <span class="k">def</span> <span class="nf">extend_str</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tp</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        a list of arbitrary character strings into a string and then encode() and add into the bytearray</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_packets</span> <span class="o">+=</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tp</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_encoding</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="LabelGenerator.to_bytes"><a class="viewcode-back" href="../sbpl.html#sbpl.LabelGenerator.to_bytes">[docs]</a>    <span class="k">def</span> <span class="nf">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        bytearray to bytes</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">bytes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_packets</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="LabelGenerator.begin_packet"><a class="viewcode-back" href="../sbpl.html#sbpl.LabelGenerator.begin_packet">[docs]</a>    <span class="k">def</span> <span class="nf">begin_packet</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A packet must first execute this method at the beginning.</span>
+<span class="sd">        </span>
+<span class="sd">        You must execute end_packet() later.</span>
+<span class="sd">        To print multiple pages, execute the necessary number of begin_packet()/end_packet()</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_packets</span> <span class="o">+=</span> <span class="n">B_STX</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+<div class="viewcode-block" id="LabelGenerator.end_packet"><a class="viewcode-back" href="../sbpl.html#sbpl.LabelGenerator.end_packet">[docs]</a>    <span class="k">def</span> <span class="nf">end_packet</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A packet must last execute this method at the ending.</span>
+<span class="sd">        </span>
+<span class="sd">        You must execute begin_packet() first.</span>
+<span class="sd">        To print multiple pages, execute the necessary number of begin_packet()/end_packet()</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_packets</span> <span class="o">+=</span> <span class="n">B_ETX</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+<div class="viewcode-block" id="LabelGenerator.packet_for_with"><a class="viewcode-back" href="../sbpl.html#sbpl.LabelGenerator.packet_for_with">[docs]</a>    <span class="k">def</span> <span class="nf">packet_for_with</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        with gen.packet_for_with():</span>
+<span class="sd">            gen.somemethod() # generate inner packets</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">class</span> <span class="nc">PacketGather</span><span class="p">:</span>
+            <span class="n">generator</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">g</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_generator</span> <span class="o">=</span> <span class="n">g</span>
+            <span class="k">def</span> <span class="nf">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_generator</span><span class="o">.</span><span class="n">begin_packet</span><span class="p">()</span>
+                <span class="k">return</span> <span class="bp">self</span>
+            <span class="k">def</span> <span class="nf">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ex_type</span><span class="p">,</span> <span class="n">ex_value</span><span class="p">,</span> <span class="n">trace</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_generator</span><span class="o">.</span><span class="n">end_packet</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">PacketGather</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="LabelGenerator.begin_page"><a class="viewcode-back" href="../sbpl.html#sbpl.LabelGenerator.begin_page">[docs]</a>    <span class="k">def</span> <span class="nf">begin_page</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Each page must first execute this command at the beginning.</span>
+<span class="sd">        </span>
+<span class="sd">        You must execute begin_packet() just before.</span>
+<span class="sd">        You must execute end_page() later.</span>
+<span class="sd">        To print multiple pages, execute the necessary number of begin_page()/end_page()</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">extend_str</span><span class="p">((</span><span class="n">ESC</span><span class="p">,</span> <span class="s1">&#39;A&#39;</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+<div class="viewcode-block" id="LabelGenerator.end_page"><a class="viewcode-back" href="../sbpl.html#sbpl.LabelGenerator.end_page">[docs]</a>    <span class="k">def</span> <span class="nf">end_page</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Each page must last execute this command at the ending.</span>
+<span class="sd">        </span>
+<span class="sd">        You must execute begin_page() first.</span>
+<span class="sd">        You must execute end_packet() immediately after that.</span>
+<span class="sd">        To print multiple pages, execute the necessary number of begin_page()/end_page()</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">extend_str</span><span class="p">((</span><span class="n">ESC</span><span class="p">,</span> <span class="s1">&#39;Z&#39;</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+<div class="viewcode-block" id="LabelGenerator.page_for_with"><a class="viewcode-back" href="../sbpl.html#sbpl.LabelGenerator.page_for_with">[docs]</a>    <span class="k">def</span> <span class="nf">page_for_with</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        with gen.page_for_with():</span>
+<span class="sd">            gen.somemethod() # generate inner the page</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">class</span> <span class="nc">PageGather</span><span class="p">:</span>
+            <span class="n">_generator</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">g</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_generator</span> <span class="o">=</span> <span class="n">g</span>
+            <span class="k">def</span> <span class="nf">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_generator</span><span class="o">.</span><span class="n">begin_page</span><span class="p">()</span>
+                <span class="k">return</span> <span class="bp">self</span>
+            <span class="k">def</span> <span class="nf">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ex_type</span><span class="p">,</span> <span class="n">ex_value</span><span class="p">,</span> <span class="n">trace</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_generator</span><span class="o">.</span><span class="n">end_page</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">PageGather</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="LabelGenerator.set_label_size"><a class="viewcode-back" href="../sbpl.html#sbpl.LabelGenerator.set_label_size">[docs]</a>    <span class="k">def</span> <span class="nf">set_label_size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">size</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Specify the size of the label to be printed.</span>
+<span class="sd">        </span>
+<span class="sd">        :param size: Specify the size of the label in two-dimensional(width,height) pixel coordinates. e.g. (100, 200)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">sz</span> <span class="o">=</span> <span class="s1">&#39;A1V</span><span class="si">{0[1]:04d}</span><span class="s1">H</span><span class="si">{0[0]:04d}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">extend_str</span><span class="p">((</span><span class="n">ESC</span><span class="p">,</span> <span class="n">sz</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+        
+<div class="viewcode-block" id="LabelGenerator.shift_jis"><a class="viewcode-back" href="../sbpl.html#sbpl.LabelGenerator.shift_jis">[docs]</a>    <span class="k">def</span> <span class="nf">shift_jis</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Shift_JIS is specified as the character code to be sent to the printer.</span>
+
+<span class="sd">        It must be executed when printing multi-byte character strings.</span>
+<span class="sd">        However, the string given to each method must be as str (automatically encode() is executed)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">extend_str</span><span class="p">((</span><span class="n">ESC</span><span class="p">,</span> <span class="s1">&#39;KC1&#39;</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+<div class="viewcode-block" id="LabelGenerator.skip_cutting"><a class="viewcode-back" href="../sbpl.html#sbpl.LabelGenerator.skip_cutting">[docs]</a>    <span class="k">def</span> <span class="nf">skip_cutting</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Designate the printer not to cut the current label.</span>
+
+<span class="sd">        The behavior of this command varies depending on the settings </span>
+<span class="sd">        of the printer itself. Use it with setting to cut every page.</span>
+<span class="sd">        This command is valid only on the label that was executed, </span>
+<span class="sd">        and it needs to be executed again on the next page.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">extend_str</span><span class="p">((</span><span class="n">ESC</span><span class="p">,</span> <span class="s1">&#39;CT0&#39;</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+        
+<div class="viewcode-block" id="LabelGenerator.print"><a class="viewcode-back" href="../sbpl.html#sbpl.LabelGenerator.print">[docs]</a>    <span class="k">def</span> <span class="nf">print</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        How many copies of the current label should be printed.</span>
+<span class="sd">        </span>
+<span class="sd">        If this command is not executed, labels are not printed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">nm</span> <span class="o">=</span> <span class="s1">&#39;Q</span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">num</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">extend_str</span><span class="p">((</span><span class="n">ESC</span><span class="p">,</span> <span class="n">nm</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="LabelGenerator.rotate_0"><a class="viewcode-back" href="../sbpl.html#sbpl.LabelGenerator.rotate_0">[docs]</a>    <span class="k">def</span> <span class="nf">rotate_0</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set rotation of coordinate axis to 0 degree</span>
+
+<span class="sd">        This is the default orientation of SATO&#39;s printer, </span>
+<span class="sd">        and when you look at the label printed standing behind the printer, </span>
+<span class="sd">        it is the direction in which the string is printed just as you have seen.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">extend_str</span><span class="p">((</span><span class="n">ESC</span><span class="p">,</span> <span class="s1">&#39;%0&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rotate</span> <span class="o">=</span> <span class="mi">0</span></div>
+
+<div class="viewcode-block" id="LabelGenerator.rotate_90"><a class="viewcode-back" href="../sbpl.html#sbpl.LabelGenerator.rotate_90">[docs]</a>    <span class="k">def</span> <span class="nf">rotate_90</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set rotation of coordinate axis to 90 degree</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">extend_str</span><span class="p">((</span><span class="n">ESC</span><span class="p">,</span> <span class="s1">&#39;%1&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rotate</span> <span class="o">=</span> <span class="mi">90</span></div>
+
+<div class="viewcode-block" id="LabelGenerator.rotate_180"><a class="viewcode-back" href="../sbpl.html#sbpl.LabelGenerator.rotate_180">[docs]</a>    <span class="k">def</span> <span class="nf">rotate_180</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set rotation of coordinate axis to 180 degree</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">extend_str</span><span class="p">((</span><span class="n">ESC</span><span class="p">,</span> <span class="s1">&#39;%2&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rotate</span> <span class="o">=</span> <span class="mi">180</span></div>
+
+<div class="viewcode-block" id="LabelGenerator.rotate_270"><a class="viewcode-back" href="../sbpl.html#sbpl.LabelGenerator.rotate_270">[docs]</a>    <span class="k">def</span> <span class="nf">rotate_270</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set rotation of coordinate axis to 0 degree</span>
+
+<span class="sd">        When you see the label printed on the right side of the printer, </span>
+<span class="sd">        it is the orientation in which the string is printed exactly as you saw. </span>
+<span class="sd">        You will execute this command if you want to use the paper sideways.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">extend_str</span><span class="p">((</span><span class="n">ESC</span><span class="p">,</span> <span class="s1">&#39;%3&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rotate</span> <span class="o">=</span> <span class="mi">270</span></div>
+
+<div class="viewcode-block" id="LabelGenerator.pos"><a class="viewcode-back" href="../sbpl.html#sbpl.LabelGenerator.pos">[docs]</a>    <span class="k">def</span> <span class="nf">pos</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">position</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The start coordinates of the printing command to be continued are made.</span>
+<span class="sd">        </span>
+<span class="sd">        Note that when you see a label standing behind the printer and its printed label, </span>
+<span class="sd">        its upper left coordinate is (0, 0). x is rightward and y is downward. </span>
+<span class="sd">        This instruction does not change with the rotate instruction.</span>
+<span class="sd">        </span>
+<span class="sd">        :param position: Two-dimensional coordinates representing the position(x,y) e.g. (100, 200)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">extend_str</span><span class="p">((</span><span class="n">ESC</span><span class="p">,</span> <span class="s1">&#39;V</span><span class="si">{0[1]:04d}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">position</span><span class="p">),</span> <span class="n">ESC</span><span class="p">,</span> <span class="s1">&#39;H</span><span class="si">{0[0]:04d}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">position</span><span class="p">)))</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+<div class="viewcode-block" id="LabelGenerator.line"><a class="viewcode-back" href="../sbpl.html#sbpl.LabelGenerator.line">[docs]</a>    <span class="k">def</span> <span class="nf">line</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">thickness</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Pull a vertical or horizontal lines (diagonal lines can not be pulled)</span>
+<span class="sd">        </span>
+<span class="sd">        :param length: Specify only one of x or y in two-dimensional coordinates e.g. (123, 0) or (0, 456)</span>
+<span class="sd">        :param thickness: Line thickness (1-99)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">length</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">length</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="ow">or</span> <span class="p">(</span><span class="n">length</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">length</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span> <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">length</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">length</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="s1">&#39;H&#39;</span> <span class="k">if</span> <span class="n">length</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span> <span class="k">else</span> <span class="s1">&#39;V&#39;</span>
+        <span class="n">ln</span> <span class="o">=</span> <span class="n">length</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">length</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">length</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">pt</span> <span class="o">=</span> <span class="s1">&#39;FW</span><span class="si">{0:02d}{1}{2:04d}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">thickness</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">ln</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">extend_str</span><span class="p">((</span><span class="n">ESC</span><span class="p">,</span> <span class="n">pt</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="LabelGenerator.rectangle"><a class="viewcode-back" href="../sbpl.html#sbpl.LabelGenerator.rectangle">[docs]</a>    <span class="k">def</span> <span class="nf">rectangle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">thickness</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Draw a rectangle</span>
+<span class="sd">        </span>
+<span class="sd">        :param size: (width,height) e.g. (123, 456)</span>
+<span class="sd">        :param thickness: Line thickness e.g.(2,2)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">#print(size, thickness)</span>
+        <span class="n">pt</span> <span class="o">=</span> <span class="s1">&#39;FW</span><span class="si">{0[0]:02d}{0[1]:02d}</span><span class="s1">V</span><span class="si">{1[1]:04d}</span><span class="s1">H</span><span class="si">{1[0]:04d}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">thickness</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">extend_str</span><span class="p">((</span><span class="n">ESC</span><span class="p">,</span> <span class="n">pt</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="LabelGenerator.expansion"><a class="viewcode-back" href="../sbpl.html#sbpl.LabelGenerator.expansion">[docs]</a>    <span class="k">def</span> <span class="nf">expansion</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exp</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">pitch</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Specify magnification and pitch of character printing following this command</span>
+<span class="sd">        </span>
+<span class="sd">        :param exp: Two-dimensional coordinates representing magnification (H_expansion,y_expansion) e.g. (1,2)</span>
+<span class="sd">        :param pitch: Specify the pitch between characters in pixels (0-99)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ex</span> <span class="o">=</span> <span class="s1">&#39;L</span><span class="si">{0[0]:02d}{0[1]:02d}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">exp</span><span class="p">)</span>
+        <span class="n">pt</span> <span class="o">=</span> <span class="s1">&#39;P</span><span class="si">{0:02d}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pitch</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">extend_str</span><span class="p">((</span><span class="n">ESC</span><span class="p">,</span> <span class="n">pt</span><span class="p">,</span> <span class="n">ESC</span><span class="p">,</span> <span class="n">ex</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+    
+<div class="viewcode-block" id="LabelGenerator.write_text"><a class="viewcode-back" href="../sbpl.html#sbpl.LabelGenerator.write_text">[docs]</a>    <span class="k">def</span> <span class="nf">write_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Print specified character string with built-in font</span>
+<span class="sd">        </span>
+<span class="sd">        :param text: String to output. For multibyte characters, it must be a character that exists in CP932</span>
+<span class="sd">        :type text: str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">extend_str</span><span class="p">((</span><span class="n">ESC</span><span class="p">,</span> <span class="s1">&#39;K9B&#39;</span><span class="p">,</span> <span class="n">text</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+<div class="viewcode-block" id="LabelGenerator.bold_text"><a class="viewcode-back" href="../sbpl.html#sbpl.LabelGenerator.bold_text">[docs]</a>    <span class="k">def</span> <span class="nf">bold_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Print specified character string with built-in bold font</span>
+<span class="sd">        </span>
+<span class="sd">        :param text: String to output. Only alphanumeric symbols are valid</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">extend_str</span><span class="p">((</span><span class="n">ESC</span><span class="p">,</span> <span class="s1">&#39;X22,&#39;</span><span class="p">,</span> <span class="n">text</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+<div class="viewcode-block" id="LabelGenerator.barcode_ratio"><a class="viewcode-back" href="../sbpl.html#sbpl.LabelGenerator.barcode_ratio">[docs]</a>    <span class="k">def</span> <span class="nf">barcode_ratio</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ratio</span><span class="o">=</span><span class="s1">&#39;1:3&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Change the size of the barcode by changing the space between the bars.</span>
+<span class="sd">        </span>
+<span class="sd">        However, there is a barcode that can not be output if it is set to other than &#39;1:3&#39;.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_bar_ratio</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ratio_map</span><span class="p">[</span><span class="s1">&#39;1:3&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">ratio</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ratio_map</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_bar_ratio</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ratio_map</span><span class="p">[</span><span class="n">ratio</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="LabelGenerator.code_39"><a class="viewcode-back" href="../sbpl.html#sbpl.LabelGenerator.code_39">[docs]</a>    <span class="k">def</span> <span class="nf">code_39</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">pitch</span><span class="p">,</span> <span class="n">height</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Output barcode of CODE 39 standard</span>
+
+<span class="sd">        Valid characters: numbers, alphabets, symbols（-,.,(space),＊,$,／,+,%）の43 charactors</span>
+<span class="sd">        </span>
+<span class="sd">        :param pitch: Barcode thickness. When the number is increased, the width suddenly increases</span>
+<span class="sd">        :param height: Bar length of the bars. Pixel unit(1-999)</span>
+<span class="sd">        :param text: String to print. Automatically enclosed in &#39;*&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">pt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bar_ratio</span> <span class="o">+</span> <span class="s1">&#39;1</span><span class="si">{0:02d}{1:03d}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pitch</span><span class="p">,</span> <span class="n">height</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">text</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;*&quot;</span><span class="p">:</span> <span class="n">text</span> <span class="o">=</span> <span class="s1">&#39;*&#39;</span> <span class="o">+</span> <span class="n">text</span> <span class="o">+</span> <span class="s1">&#39;*&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">extend_str</span><span class="p">((</span><span class="n">ESC</span><span class="p">,</span> <span class="n">pt</span><span class="p">,</span> <span class="n">text</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+<div class="viewcode-block" id="LabelGenerator.code_93"><a class="viewcode-back" href="../sbpl.html#sbpl.LabelGenerator.code_93">[docs]</a>    <span class="k">def</span> <span class="nf">code_93</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">pitch</span><span class="p">,</span> <span class="n">height</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Output barcode of CODE 93 standard</span>
+
+<span class="sd">        Valid characters: numbers, alphabets, symbols.（-,.,(space),＊,$,／,+,%） Four types of shift characters</span>
+<span class="sd">        </span>
+<span class="sd">        :param pitch: Barcode thickness. When the number is increased, the width suddenly increases</span>
+<span class="sd">        :param height: Bar length of the bars. Pixel unit(1-999)</span>
+<span class="sd">        :param text: String to print.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">pt</span> <span class="o">=</span> <span class="s1">&#39;BC</span><span class="si">{0:02d}{1:03d}{2:02d}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pitch</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">extend_str</span><span class="p">((</span><span class="n">ESC</span><span class="p">,</span> <span class="n">pt</span><span class="p">,</span> <span class="n">text</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+<div class="viewcode-block" id="LabelGenerator.code_128"><a class="viewcode-back" href="../sbpl.html#sbpl.LabelGenerator.code_128">[docs]</a>    <span class="k">def</span> <span class="nf">code_128</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">pitch</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">code</span><span class="o">=</span><span class="s1">&#39;B&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Output barcode of CODE 128 standard</span>
+
+<span class="sd">        Valid characters: numbers, alphabets, symbols.（-,.,(space),＊,$,／,+,%） Four types of shift characters</span>
+<span class="sd">        </span>
+<span class="sd">        :param pitch: Barcode thickness. When the number is increased, the width suddenly increases</span>
+<span class="sd">        :param height: Bar length of the bars. Pixel unit(1-999)</span>
+<span class="sd">        :param text: String to print.</span>
+<span class="sd">        :param code: Specify code start allowed by Code 128. A, B, C are valid, default is B. See the standard for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">pt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bar_ratio</span> <span class="o">+</span> <span class="s1">&#39;G</span><span class="si">{0:02d}{1:03d}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pitch</span><span class="p">,</span> <span class="n">height</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">code</span> <span class="o">==</span> <span class="s2">&quot;C&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">extend_str</span><span class="p">((</span><span class="n">ESC</span><span class="p">,</span> <span class="n">pt</span><span class="p">,</span> <span class="s1">&#39;&gt;I&gt;F&#39;</span><span class="p">,</span> <span class="n">text</span><span class="p">))</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="k">if</span> <span class="n">code</span> <span class="o">==</span> <span class="s2">&quot;A&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">extend_str</span><span class="p">((</span><span class="n">ESC</span><span class="p">,</span> <span class="n">pt</span><span class="p">,</span> <span class="s1">&#39;&gt;G&gt;F&#39;</span><span class="p">,</span> <span class="n">text</span><span class="p">))</span>
+            <span class="k">return</span> <span class="bp">self</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">extend_str</span><span class="p">((</span><span class="n">ESC</span><span class="p">,</span> <span class="n">pt</span><span class="p">,</span> <span class="s1">&#39;&gt;F&#39;</span><span class="p">,</span> <span class="n">text</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+        
+<div class="viewcode-block" id="LabelGenerator.jan_13"><a class="viewcode-back" href="../sbpl.html#sbpl.LabelGenerator.jan_13">[docs]</a>    <span class="k">def</span> <span class="nf">jan_13</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">pitch</span><span class="p">,</span> <span class="n">height</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Output barcode of JAN 13 standard</span>
+
+<span class="sd">        Valid characters: numbers</span>
+<span class="sd">        </span>
+<span class="sd">        :param pitch: Barcode thickness. When the number is increased, the width suddenly increases</span>
+<span class="sd">        :param height: Bar length of the bars. Pixel unit(1-999)</span>
+<span class="sd">        :param text: String to print. Must be 11 or 13 chars.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">11</span> <span class="ow">or</span> <span class="mi">13</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>  <span class="p">:</span> <span class="k">raise</span> <span class="s2">&quot;JAN-13: valid range: 11-13&quot;</span>
+        <span class="n">pt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bar_ratio</span> <span class="o">+</span> <span class="s1">&#39;3</span><span class="si">{0:02d}{1:03d}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pitch</span><span class="p">,</span> <span class="n">height</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">extend_str</span><span class="p">((</span><span class="n">ESC</span><span class="p">,</span> <span class="n">pt</span><span class="p">,</span> <span class="n">text</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="LabelGenerator.jan_8"><a class="viewcode-back" href="../sbpl.html#sbpl.LabelGenerator.jan_8">[docs]</a>    <span class="k">def</span> <span class="nf">jan_8</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">pitch</span><span class="p">,</span> <span class="n">height</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Output barcode of JAN 8 standard</span>
+
+<span class="sd">        Valid characters: numbers</span>
+<span class="sd">        </span>
+<span class="sd">        :param pitch: Barcode thickness. When the number is increased, the width suddenly increases</span>
+<span class="sd">        :param height: Bar length of the bars. Pixel unit(1-999)</span>
+<span class="sd">        :param text: String to print. Must be 6 or 8 chars.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">6</span> <span class="ow">or</span> <span class="mi">8</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>  <span class="p">:</span> <span class="k">raise</span> <span class="s2">&quot;JAN-8: valid range: 6-8&quot;</span>
+        <span class="n">pt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bar_ratio</span> <span class="o">+</span> <span class="s1">&#39;4</span><span class="si">{0:02d}{1:03d}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pitch</span><span class="p">,</span> <span class="n">height</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">extend_str</span><span class="p">((</span><span class="n">ESC</span><span class="p">,</span> <span class="n">pt</span><span class="p">,</span> <span class="n">text</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="LabelGenerator.codabar"><a class="viewcode-back" href="../sbpl.html#sbpl.LabelGenerator.codabar">[docs]</a>    <span class="k">def</span> <span class="nf">codabar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">pitch</span><span class="p">,</span> <span class="n">height</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Output barcode of NW-7(CODABAR) standard</span>
+
+<span class="sd">        Valid characters: numbers, A,B,C,D, symbols. (-,$,/, . ,+)</span>
+<span class="sd">        </span>
+<span class="sd">        :param pitch: Barcode thickness. When the number is increased, the width suddenly increases</span>
+<span class="sd">        :param height: Bar length of the bars. Pixel unit(1-999)</span>
+<span class="sd">        :param text: String to print.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">pt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bar_ratio</span> <span class="o">+</span> <span class="s1">&#39;0</span><span class="si">{0:02d}{1:03d}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pitch</span><span class="p">,</span> <span class="n">height</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">extend_str</span><span class="p">((</span><span class="n">ESC</span><span class="p">,</span> <span class="n">pt</span><span class="p">,</span> <span class="n">text</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+<div class="viewcode-block" id="LabelGenerator.itf2of5"><a class="viewcode-back" href="../sbpl.html#sbpl.LabelGenerator.itf2of5">[docs]</a>    <span class="k">def</span> <span class="nf">itf2of5</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">pitch</span><span class="p">,</span> <span class="n">height</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Output barcode of Interleaved 2 of 5 standard</span>
+
+<span class="sd">        Valid characters: numbers</span>
+<span class="sd">        </span>
+<span class="sd">        :param pitch: Barcode thickness. When the number is increased, the width suddenly increases</span>
+<span class="sd">        :param height: Bar length of the bars. Pixel unit(1-999)</span>
+<span class="sd">        :param text: String to print.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">pt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bar_ratio</span> <span class="o">+</span> <span class="s1">&#39;2</span><span class="si">{0:02d}{1:03d}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pitch</span><span class="p">,</span> <span class="n">height</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">extend_str</span><span class="p">((</span><span class="n">ESC</span><span class="p">,</span> <span class="n">pt</span><span class="p">,</span> <span class="n">text</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+<div class="viewcode-block" id="LabelGenerator.set_font_path"><a class="viewcode-back" href="../sbpl.html#sbpl.LabelGenerator.set_font_path">[docs]</a>    <span class="k">def</span> <span class="nf">set_font_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">getfontpath</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Resolve the PATH of the font file.</span>
+<span class="sd">        </span>
+<span class="sd">        If a font file exists other than the current directory, </span>
+<span class="sd">        it is necessary to supplement this font path by calling this method beforehand. </span>
+<span class="sd">        Give a function.</span>
+<span class="sd">        </span>
+<span class="sd">        :param getfontpath: Specify a function that takes str as an argument and returns str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_getfontpath</span> <span class="o">=</span> <span class="n">getfontpath</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+<div class="viewcode-block" id="LabelGenerator.ttf_face"><a class="viewcode-back" href="../sbpl.html#sbpl.LabelGenerator.ttf_face">[docs]</a>    <span class="k">def</span> <span class="nf">ttf_face</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">font</span><span class="p">,</span> <span class="n">expansion</span><span class="p">,</span> <span class="n">pitch</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Freetype.Face is acquired using Freetype-py.</span>
+<span class="sd">        </span>
+<span class="sd">        In the windows environment, dll is required under the name &quot;freetype.dll&quot; in the execution directory.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">freetype</span>
+        <span class="n">fontpath</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_getfontpath</span><span class="p">(</span><span class="n">font</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_getfontpath</span> <span class="k">else</span> <span class="n">font</span>
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_face</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_font</span> <span class="o">!=</span> <span class="n">fontpath</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_face</span> <span class="o">=</span> <span class="n">freetype</span><span class="o">.</span><span class="n">Face</span><span class="p">(</span><span class="n">fontpath</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_font</span> <span class="o">=</span> <span class="n">fontpath</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_face</span><span class="o">.</span><span class="n">set_char_size</span><span class="p">(</span><span class="o">*</span><span class="n">expansion</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_expansion</span> <span class="o">=</span> <span class="n">expansion</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pitch</span> <span class="o">=</span> <span class="n">pitch</span></div>
+
+<div class="viewcode-block" id="LabelGenerator.ttf_write"><a class="viewcode-back" href="../sbpl.html#sbpl.LabelGenerator.ttf_write">[docs]</a>    <span class="k">def</span> <span class="nf">ttf_write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">maxwidth</span><span class="p">,</span> <span class="n">align</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Print with a GB instruction while rendering TrueType fonts</span>
+
+<span class="sd">        As GB instruction can usually print only one character, this class realizes processing for each character</span>
+<span class="sd">        </span>
+<span class="sd">        :param text: The output character string. Line breaks are ignored. Halfwidth and double-byte spaces are treated as fixed width shifted respectively.</span>
+<span class="sd">        :param pos: Start coordinate to be printed. The positional relationship between pos and character string changes by rotate.</span>
+<span class="sd">        :param maxwidth: (optional)Specify the maximum width of the drawing area. The start position when center or right is specified with align is changed. Trimed when exceeding the maximum width.</span>
+<span class="sd">        :param align: (optional)Change the left and right position of the character string. center is the center of maxwidth, right is the right end.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">pos</span>
+        <span class="n">glyphs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">totalwidth</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">text</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">t</span> <span class="o">==</span> <span class="s1">&#39;</span><span class="se">\r</span><span class="s1">&#39;</span> <span class="ow">or</span> <span class="n">t</span> <span class="o">==</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">:</span> <span class="c1"># 改行コードは無視</span>
+                <span class="k">continue</span>
+            <span class="n">g</span> <span class="o">=</span> <span class="n">TtfGlyph</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_face</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_expansion</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">maxwidth</span> <span class="o">!=</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">totalwidth</span> <span class="o">+</span> <span class="n">g</span><span class="o">.</span><span class="n">offset_x</span><span class="p">()</span> <span class="o">&gt;</span> <span class="n">maxwidth</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="n">totalwidth</span> <span class="o">+=</span> <span class="n">g</span><span class="o">.</span><span class="n">offset_x</span><span class="p">()</span>
+            <span class="n">glyphs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">g</span><span class="p">)</span>
+
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">glyph_offset</span><span class="p">((</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_last_expansion</span> <span class="o">//</span> <span class="mi">72</span><span class="p">)))</span>
+        <span class="k">if</span> <span class="n">align</span> <span class="o">==</span> <span class="s1">&#39;center&#39;</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">glyph_offset</span><span class="p">((</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">),</span> <span class="p">((</span><span class="n">maxwidth</span> <span class="o">-</span> <span class="n">totalwidth</span><span class="p">)</span><span class="o">//</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">align</span> <span class="o">==</span> <span class="s1">&#39;right&#39;</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">glyph_offset</span><span class="p">((</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">),</span> <span class="p">(</span><span class="n">maxwidth</span> <span class="o">-</span> <span class="n">totalwidth</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">glyphs</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">g</span><span class="o">.</span><span class="n">buffer</span><span class="p">:</span>
+                <span class="n">g</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">))</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">glyph_offset</span><span class="p">((</span><span class="n">x</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">_pitch</span><span class="p">,</span><span class="n">y</span><span class="p">),</span> <span class="n">g</span><span class="o">.</span><span class="n">offset</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="LabelGenerator.glyph_offset"><a class="viewcode-back" href="../sbpl.html#sbpl.LabelGenerator.glyph_offset">[docs]</a>    <span class="k">def</span> <span class="nf">glyph_offset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">offset</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Coordinate offset calculation corresponding to rotate</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">pos</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rotate</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">+=</span> <span class="n">offset</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">y</span> <span class="o">-=</span> <span class="n">offset</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rotate</span> <span class="o">==</span> <span class="mi">90</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">-=</span> <span class="n">offset</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">y</span> <span class="o">-=</span> <span class="n">offset</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rotate</span> <span class="o">==</span> <span class="mi">180</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">-=</span> <span class="n">offset</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">y</span> <span class="o">+=</span> <span class="n">offset</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rotate</span> <span class="o">==</span> <span class="mi">270</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">+=</span> <span class="n">offset</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">y</span> <span class="o">+=</span> <span class="n">offset</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span></div></div>
+
+<div class="viewcode-block" id="JsonParser"><a class="viewcode-back" href="../sbpl.html#sbpl.JsonParser">[docs]</a><span class="k">class</span> <span class="nc">JsonParser</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Provide functions that can specify printing by SBPL with JSON.</span>
+<span class="sd">    </span>
+<span class="sd">    Even a simple example of SBPL printing requires the execution of many commands. </span>
+<span class="sd">    It is difficult to specify printing contents over a plurality of pages by a program, </span>
+<span class="sd">    and correction becomes difficult. So we made it possible to designate all at once by JSON.</span>
+<span class="sd">    </span>
+<span class="sd">    - The outside of JSON is always a list, and the inside is an object or list.</span>
+<span class="sd">    - Object specifies the host name of the print server to be printed, it can be specified only once at the beginning.</span>
+<span class="sd">    - The list includes a print instruction for one page in one list in the list of print commands.</span>
+
+<span class="sd">    for example::</span>
+
+<span class="sd">        [</span>
+<span class="sd">            {&quot;host&quot;:&quot;label_printer1&quot;, &quot;port&quot;: &quot;1024&quot;, &quot;communication&quot;: &quot;SG412R_Status5&quot;},</span>
+<span class="sd">            [</span>
+<span class="sd">                {&quot;set_label_size&quot;: [1000, 3000]},</span>
+<span class="sd">                {&quot;shift_jis&quot;: 0},</span>
+<span class="sd">                {&quot;rotate_270&quot;: 0},</span>
+<span class="sd">                {&quot;comment&quot;:&quot;==ticket main==&quot;},</span>
+<span class="sd">                {&quot;pos&quot;: [710, 130], &quot;expansion&quot;: [6000], &quot;ttf_write&quot;: &quot;TEST CONSERT&quot;, &quot;font&quot;: &quot;mplus-1p-medium.ttf&quot;},</span>
+<span class="sd">                {&quot;pos&quot;: [530, 1040], &quot;expansion&quot;: [2700], &quot;ttf_write&quot;: &quot;Organizer: Python High School&quot;, &quot;font&quot;: &quot;mplus-1p-medium.ttf&quot;},</span>
+<span class="sd">                {&quot;pos&quot;: [370, 50], &quot;expansion&quot;: [3700], &quot;ttf_write&quot;: &quot;Friday, February 14, 2014 14:00&quot;, &quot;font&quot;: &quot;mplus-1p-medium.ttf&quot;},</span>
+<span class="sd">                {&quot;pos&quot;: [300, 80], &quot;expansion&quot;: [2800], &quot;ttf_write&quot;: &quot;Indoor playground&quot;, &quot;font&quot;: &quot;mplus-1p-medium.ttf&quot;},</span>
+<span class="sd">                {&quot;pos&quot;: [230, 30], &quot;expansion&quot;: [3500], &quot;ttf_write&quot;: &quot;Free seat $5.00&quot;, &quot;font&quot;: &quot;mplus-1p-medium.ttf&quot;},</span>
+<span class="sd">                {&quot;pos&quot;: [180, 50], &quot;expansion&quot;: [1800], &quot;ttf_write&quot;: &quot;Drinks can be brought in but alcohol is prohibited.&quot;, &quot;font&quot;: &quot;mplus-1p-medium.ttf&quot;},</span>
+<span class="sd">                {&quot;comment&quot;:&quot;==barcode==&quot;},</span>
+<span class="sd">                {&quot;pos&quot;: [260, 930], &quot;codebar&quot;: [&quot;0004693003005000&quot;, 3, 100]},</span>
+<span class="sd">                {&quot;pos&quot;: [160, 1000], &quot;expansion&quot;: [1,1], &quot;bold_text&quot;: &quot;0004693003005000&quot;},</span>
+<span class="sd">                {&quot;comment&quot;:&quot;==ticket parted==&quot;},</span>
+<span class="sd">                {&quot;pos&quot;: [780, 1610], &quot;expansion&quot;: [2500], &quot;ttf_write&quot;: &quot;TEST&quot;, &quot;font&quot;: &quot;mplus-1p-medium.ttf&quot;},</span>
+<span class="sd">                {&quot;pos&quot;: [670, 1610], &quot;expansion&quot;: [2500], &quot;ttf_write&quot;: &quot;CONSERT&quot;, &quot;font&quot;: &quot;mplus-1p-medium.ttf&quot;},</span>
+<span class="sd">                {&quot;pos&quot;: [620, 1630], &quot;expansion&quot;: [2000], &quot;ttf_write&quot;: &quot;Friday, February 14, 2014 14:00&quot;, &quot;font&quot;: &quot;mplus-1p-medium.ttf&quot;},</span>
+<span class="sd">                {&quot;pos&quot;: [580, 1630], &quot;expansion&quot;: [2000], &quot;ttf_write&quot;: &quot;14:00&quot;, &quot;font&quot;: &quot;mplus-1p-medium.ttf&quot;},</span>
+<span class="sd">                {&quot;pos&quot;: [420, 1610], &quot;expansion&quot;: [2000], &quot;ttf_write&quot;: &quot;Free seat&quot;, &quot;font&quot;: &quot;mplus-1p-medium.ttf&quot;},</span>
+<span class="sd">                {&quot;pos&quot;: [330, 1600], &quot;expansion&quot;: [2000], &quot;ttf_write&quot;: &quot;$5.00&quot;, &quot;font&quot;: &quot;mplus-1p-medium.ttf&quot;},</span>
+<span class="sd">                {&quot;print&quot;: 1}</span>
+<span class="sd">            ]</span>
+<span class="sd">        ]</span>
+
+<span class="sd">    usage::</span>
+
+<span class="sd">        json_str = &quot;(defined adobe)&quot;</span>
+<span class="sd">        comm = SG412R_Status5()</span>
+<span class="sd">        gen = LabelGenerator()</span>
+<span class="sd">        parser = JsonParser(gen, json_str)</span>
+<span class="sd">        parser.post(comm)</span>
+
+
+<span class="sd">    :param generator: Instances of LabelGenerator or its derived classes</span>
+<span class="sd">    :param json: JSON which describes contents to be printed. If a character string is given, it is passed to json.load()</span>
+<span class="sd">    :type json: str, or return value of json.loads()</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_gen</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">_comm_setting</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">_json</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">generator</span><span class="p">,</span> <span class="n">json_str</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_gen</span> <span class="o">=</span> <span class="n">generator</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">json_str</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">json</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;str&#39;</span> <span class="k">else</span> <span class="n">json</span>
+
+<div class="viewcode-block" id="JsonParser.parse"><a class="viewcode-back" href="../sbpl.html#sbpl.JsonParser.parse">[docs]</a>    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Issue the SBPL command while reading the contents of JSON.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">page</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_json</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">page</span><span class="p">)</span> <span class="o">==</span> <span class="nb">dict</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_comm_setting</span> <span class="o">=</span> <span class="n">page</span>
+                <span class="k">continue</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gen</span><span class="o">.</span><span class="n">packet_for_with</span><span class="p">():</span>
+                <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gen</span><span class="o">.</span><span class="n">page_for_with</span><span class="p">():</span>
+                    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">page</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">parse_line</span><span class="p">(</span><span class="n">line</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="JsonParser.post"><a class="viewcode-back" href="../sbpl.html#sbpl.JsonParser.post">[docs]</a>    <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">comm</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Execute remote printing using communication settings described in JSON</span>
+<span class="sd">        </span>
+<span class="sd">        When the print destination is fixed, it is not necessary to include it in JSON, </span>
+<span class="sd">        but it is required to select _comm_setting manually or not to call this method.</span>
+<span class="sd">        </span>
+<span class="sd">        :param comm: Communication module for SATO printer. For example, an instance of SG412R_Status5</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="n">comm</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_comm_setting</span><span class="p">[</span><span class="s2">&quot;host&quot;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_comm_setting</span><span class="p">[</span><span class="s2">&quot;port&quot;</span><span class="p">]):</span>
+            <span class="n">comm</span><span class="o">.</span><span class="n">prepare</span><span class="p">()</span>
+            <span class="c1"># generate label...</span>
+            <span class="n">comm</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_gen</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">())</span>
+            <span class="n">comm</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="JsonParser.parse_line"><a class="viewcode-back" href="../sbpl.html#sbpl.JsonParser.parse_line">[docs]</a>    <span class="k">def</span> <span class="nf">parse_line</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Convert the instruction described in JSON to SBPL command</span>
+<span class="sd">        </span>
+<span class="sd">        :param line: The dict expressing the instruction described in JSON</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="s1">&#39;set_label_size&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_gen</span><span class="o">.</span><span class="n">set_label_size</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="s1">&#39;set_label_size&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="s1">&#39;line&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_gen</span><span class="o">.</span><span class="n">pos</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="s1">&#39;pos&#39;</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_gen</span><span class="o">.</span><span class="n">line</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="s1">&#39;line&#39;</span><span class="p">],</span> <span class="n">line</span><span class="p">[</span><span class="s1">&#39;thickness&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="s1">&#39;rectangle&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_gen</span><span class="o">.</span><span class="n">pos</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="s1">&#39;pos&#39;</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_gen</span><span class="o">.</span><span class="n">rectangle</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="s1">&#39;rectangle&#39;</span><span class="p">],</span> <span class="n">line</span><span class="p">[</span><span class="s1">&#39;thickness&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="s1">&#39;write_text&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_gen</span><span class="o">.</span><span class="n">pos</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="s1">&#39;pos&#39;</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_gen</span><span class="o">.</span><span class="n">expansion</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="s1">&#39;expansion&#39;</span><span class="p">],</span> <span class="n">line</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;pitch&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_gen</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="s1">&#39;write_text&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="s1">&#39;bold_text&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_gen</span><span class="o">.</span><span class="n">pos</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="s1">&#39;pos&#39;</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_gen</span><span class="o">.</span><span class="n">expansion</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="s1">&#39;expansion&#39;</span><span class="p">],</span> <span class="n">line</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;pitch&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_gen</span><span class="o">.</span><span class="n">bold_text</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="s1">&#39;bold_text&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="s1">&#39;barcode_ratio&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_gen</span><span class="o">.</span><span class="n">barcode_ratio</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="s1">&#39;barcode_ratio&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="s1">&#39;code_39&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_gen</span><span class="o">.</span><span class="n">pos</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="s1">&#39;pos&#39;</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_gen</span><span class="o">.</span><span class="n">code_39</span><span class="p">(</span><span class="o">*</span><span class="n">line</span><span class="p">[</span><span class="s1">&#39;code_39&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="s1">&#39;code_93&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_gen</span><span class="o">.</span><span class="n">pos</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="s1">&#39;pos&#39;</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_gen</span><span class="o">.</span><span class="n">code_93</span><span class="p">(</span><span class="o">*</span><span class="n">line</span><span class="p">[</span><span class="s1">&#39;code_93&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="s1">&#39;codabar&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_gen</span><span class="o">.</span><span class="n">pos</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="s1">&#39;pos&#39;</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_gen</span><span class="o">.</span><span class="n">codabar</span><span class="p">(</span><span class="o">*</span><span class="n">line</span><span class="p">[</span><span class="s1">&#39;codabar&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="s1">&#39;code_128&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_gen</span><span class="o">.</span><span class="n">pos</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="s1">&#39;pos&#39;</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_gen</span><span class="o">.</span><span class="n">code_128</span><span class="p">(</span><span class="o">*</span><span class="n">line</span><span class="p">[</span><span class="s1">&#39;code_128&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="s1">&#39;jan_13&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_gen</span><span class="o">.</span><span class="n">pos</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="s1">&#39;pos&#39;</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_gen</span><span class="o">.</span><span class="n">jan_13</span><span class="p">(</span><span class="o">*</span><span class="n">line</span><span class="p">[</span><span class="s1">&#39;jan_13&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="s1">&#39;itf2of5&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_gen</span><span class="o">.</span><span class="n">pos</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="s1">&#39;pos&#39;</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_gen</span><span class="o">.</span><span class="n">itf2of5</span><span class="p">(</span><span class="o">*</span><span class="n">line</span><span class="p">[</span><span class="s1">&#39;itf2of5&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="s1">&#39;skip_cutting&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_gen</span><span class="o">.</span><span class="n">skip_cutting</span><span class="p">()</span>
+        <span class="k">if</span> <span class="s1">&#39;print&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_gen</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="s1">&#39;print&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="s1">&#39;rotate_0&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_gen</span><span class="o">.</span><span class="n">rotate_0</span><span class="p">()</span>
+        <span class="k">if</span> <span class="s1">&#39;rotate_90&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_gen</span><span class="o">.</span><span class="n">rotate_90</span><span class="p">()</span>
+        <span class="k">if</span> <span class="s1">&#39;rotate_180&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_gen</span><span class="o">.</span><span class="n">rotate_180</span><span class="p">()</span>
+        <span class="k">if</span> <span class="s1">&#39;rotate_270&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_gen</span><span class="o">.</span><span class="n">rotate_270</span><span class="p">()</span>
+        <span class="k">if</span> <span class="s1">&#39;ttf_write&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_gen</span><span class="o">.</span><span class="n">ttf_face</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="s1">&#39;font&#39;</span><span class="p">],</span> <span class="n">line</span><span class="p">[</span><span class="s1">&#39;expansion&#39;</span><span class="p">],</span> <span class="n">line</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;pitch&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_gen</span><span class="o">.</span><span class="n">ttf_write</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="s1">&#39;ttf_write&#39;</span><span class="p">],</span> <span class="n">line</span><span class="p">[</span><span class="s1">&#39;pos&#39;</span><span class="p">],</span> <span class="n">line</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;width&#39;</span><span class="p">),</span> <span class="n">line</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;align&#39;</span><span class="p">))</span></div></div>
+
+
+<div class="viewcode-block" id="SG412R_Status5"><a class="viewcode-back" href="../sbpl.html#sbpl.SG412R_Status5">[docs]</a><span class="k">class</span> <span class="nc">SG412R_Status5</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A communication class for printing when the printer of SATO is operating on STATUS 5</span>
+<span class="sd">    </span>
+<span class="sd">    Since the communication specification when the printer</span>
+<span class="sd">    is operating in STATUS 5 is not disclosed, </span>
+<span class="sd">    this module was created by analyzing TCP / IP packet instead of manual.</span>
+<span class="sd">    </span>
+<span class="sd">    Since the author confirmed the operation only with SG412R-ex, </span>
+<span class="sd">    there is a possibility that it will not work on other models. </span>
+<span class="sd">    In that case, please refer to this class and implement it yourself. Welcome your post.::</span>
+
+<span class="sd">        comm = SG412R_Status5()</span>
+<span class="sd">        with comm.open(&quot;192.168.0.251&quot;, 1024):</span>
+<span class="sd">            comm.prepare()</span>
+<span class="sd">            gen = LabelGenerator()</span>
+<span class="sd">            # generate label...</span>
+<span class="sd">            comm.send(gen.to_bytes())</span>
+<span class="sd">            comm.finish()</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_client</span> <span class="o">=</span> <span class="kc">None</span>
+<div class="viewcode-block" id="SG412R_Status5.open"><a class="viewcode-back" href="../sbpl.html#sbpl.SG412R_Status5.open">[docs]</a>    <span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_client</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span><span class="n">socket</span><span class="o">.</span><span class="n">AF_INET</span><span class="p">,</span> <span class="n">socket</span><span class="o">.</span><span class="n">SOCK_STREAM</span><span class="p">)</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">connect_ex</span><span class="p">((</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">,))</span>
+        <span class="k">class</span> <span class="nc">CommGather</span><span class="p">:</span>
+            <span class="n">_comm</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">g</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_comm</span> <span class="o">=</span> <span class="n">g</span>
+            <span class="k">def</span> <span class="nf">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">self</span>
+            <span class="k">def</span> <span class="nf">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ex_type</span><span class="p">,</span> <span class="n">ex_value</span><span class="p">,</span> <span class="n">trace</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_comm</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">CommGather</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SG412R_Status5.close"><a class="viewcode-back" href="../sbpl.html#sbpl.SG412R_Status5.close">[docs]</a>    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+        <span class="c1">#print(&quot;socket closed:&quot;)</span>
+
+<div class="viewcode-block" id="SG412R_Status5.prepare"><a class="viewcode-back" href="../sbpl.html#sbpl.SG412R_Status5.prepare">[docs]</a>    <span class="k">def</span> <span class="nf">prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># initialize packet</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="nb">bytes</span><span class="o">.</span><span class="n">fromhex</span><span class="p">(</span><span class="s1">&#39;1b411b4352302c301b5a3d&#39;</span><span class="p">))</span>
+        <span class="c1">#print(&quot;send initialize packet:&quot;)</span>
+
+        <span class="c1"># printing prepare packet</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="nb">bytes</span><span class="o">.</span><span class="n">fromhex</span><span class="p">(</span><span class="s1">&#39;2101052a2a2a2a2a03&#39;</span><span class="p">))</span>
+        <span class="c1">#print(&quot;printing prepare packet:&quot;)</span>
+
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">recv</span><span class="p">(</span><span class="mi">4096</span><span class="p">)</span></div>
+        <span class="c1">#print(&quot;received:&quot;+str(response))</span>
+
+<div class="viewcode-block" id="SG412R_Status5.send"><a class="viewcode-back" href="../sbpl.html#sbpl.SG412R_Status5.send">[docs]</a>    <span class="k">def</span> <span class="nf">send</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">packets</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">packets</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SG412R_Status5.finish"><a class="viewcode-back" href="../sbpl.html#sbpl.SG412R_Status5.finish">[docs]</a>    <span class="k">def</span> <span class="nf">finish</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># printing done packet</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="nb">bytes</span><span class="o">.</span><span class="n">fromhex</span><span class="p">(</span><span class="s1">&#39;2101052a2a2a2a2a03&#39;</span><span class="p">))</span>
+        <span class="c1">#print(&quot;printing done packet:&quot;)</span>
+
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">recv</span><span class="p">(</span><span class="mi">4096</span><span class="p">)</span></div></div>
+        <span class="c1">#print(&quot;received:&quot;+str(response))</span>
+
+
+
+
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">sbpl 0.1.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, KATO Kanryu.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.2.
+    </div>
+  </body>
+</html>

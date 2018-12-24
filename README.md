@@ -33,7 +33,7 @@ with comm.open("192.168.0.251", 1024):
     gen.codebar(("0004693003005000", 3, 100))
     gen.pos((160, 1000))
     gen.expansion((1,1))
-    gen.bold_text(0004693003005000)
+    gen.bold_text("0004693003005000")
     gen.print()
     
     comm.send(gen.to_bytes())

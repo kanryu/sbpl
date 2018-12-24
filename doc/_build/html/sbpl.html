@@ -1,0 +1,789 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>sbpl package &#8212; sbpl 0.1.0 documentation</title>
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Welcome to sbpl’s documentation!" href="index.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to sbpl’s documentation!"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">sbpl 0.1.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="sbpl-package">
+<h1>sbpl package<a class="headerlink" href="#sbpl-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-sbpl">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-sbpl" title="Permalink to this headline">¶</a></h2>
+<p>SBPL module for remote printing</p>
+<p>This provides the function of remote printing directly 
+to the printer existing on your LAN by using SBPL 
+(SATO Barcode Printer Language) provided by SATO Corp.</p>
+<p>This enables arbitrary label cutting which can not be controlled
+by a normal Windows printer.</p>
+<p>This module is a prototype and may not satisfy your work, 
+but since it is Pure Python, you can add and change features yourself.</p>
+<dl class="class">
+<dt id="sbpl.JsonParser">
+<em class="property">class </em><code class="descclassname">sbpl.</code><code class="descname">JsonParser</code><span class="sig-paren">(</span><em>generator</em>, <em>json_str</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#JsonParser"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.JsonParser" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Provide functions that can specify printing by SBPL with JSON.</p>
+<p>Even a simple example of SBPL printing requires the execution of many commands. 
+It is difficult to specify printing contents over a plurality of pages by a program, 
+and correction becomes difficult. So we made it possible to designate all at once by JSON.</p>
+<ul class="simple">
+<li>The outside of JSON is always a list, and the inside is an object or list.</li>
+<li>Object specifies the host name of the print server to be printed, it can be specified only once at the beginning.</li>
+<li>The list includes a print instruction for one page in one list in the list of print commands.</li>
+</ul>
+<p>for example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span>
+    <span class="p">{</span><span class="s2">&quot;host&quot;</span><span class="p">:</span><span class="s2">&quot;label_printer1&quot;</span><span class="p">,</span> <span class="s2">&quot;port&quot;</span><span class="p">:</span> <span class="s2">&quot;1024&quot;</span><span class="p">,</span> <span class="s2">&quot;communication&quot;</span><span class="p">:</span> <span class="s2">&quot;SG412R_Status5&quot;</span><span class="p">},</span>
+    <span class="p">[</span>
+        <span class="p">{</span><span class="s2">&quot;set_label_size&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">3000</span><span class="p">]},</span>
+        <span class="p">{</span><span class="s2">&quot;shift_jis&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">&quot;rotate_270&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">&quot;comment&quot;</span><span class="p">:</span><span class="s2">&quot;==ticket main==&quot;</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">&quot;pos&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">710</span><span class="p">,</span> <span class="mi">130</span><span class="p">],</span> <span class="s2">&quot;expansion&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">6000</span><span class="p">],</span> <span class="s2">&quot;ttf_write&quot;</span><span class="p">:</span> <span class="s2">&quot;TEST CONSERT&quot;</span><span class="p">,</span> <span class="s2">&quot;font&quot;</span><span class="p">:</span> <span class="s2">&quot;mplus-1p-medium.ttf&quot;</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">&quot;pos&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">530</span><span class="p">,</span> <span class="mi">1040</span><span class="p">],</span> <span class="s2">&quot;expansion&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">2700</span><span class="p">],</span> <span class="s2">&quot;ttf_write&quot;</span><span class="p">:</span> <span class="s2">&quot;Organizer: Python High School&quot;</span><span class="p">,</span> <span class="s2">&quot;font&quot;</span><span class="p">:</span> <span class="s2">&quot;mplus-1p-medium.ttf&quot;</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">&quot;pos&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">370</span><span class="p">,</span> <span class="mi">50</span><span class="p">],</span> <span class="s2">&quot;expansion&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">3700</span><span class="p">],</span> <span class="s2">&quot;ttf_write&quot;</span><span class="p">:</span> <span class="s2">&quot;Friday, February 14, 2014 14:00&quot;</span><span class="p">,</span> <span class="s2">&quot;font&quot;</span><span class="p">:</span> <span class="s2">&quot;mplus-1p-medium.ttf&quot;</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">&quot;pos&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">300</span><span class="p">,</span> <span class="mi">80</span><span class="p">],</span> <span class="s2">&quot;expansion&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">2800</span><span class="p">],</span> <span class="s2">&quot;ttf_write&quot;</span><span class="p">:</span> <span class="s2">&quot;Indoor playground&quot;</span><span class="p">,</span> <span class="s2">&quot;font&quot;</span><span class="p">:</span> <span class="s2">&quot;mplus-1p-medium.ttf&quot;</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">&quot;pos&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">230</span><span class="p">,</span> <span class="mi">30</span><span class="p">],</span> <span class="s2">&quot;expansion&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">3500</span><span class="p">],</span> <span class="s2">&quot;ttf_write&quot;</span><span class="p">:</span> <span class="s2">&quot;Free seat $5.00&quot;</span><span class="p">,</span> <span class="s2">&quot;font&quot;</span><span class="p">:</span> <span class="s2">&quot;mplus-1p-medium.ttf&quot;</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">&quot;pos&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">180</span><span class="p">,</span> <span class="mi">50</span><span class="p">],</span> <span class="s2">&quot;expansion&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1800</span><span class="p">],</span> <span class="s2">&quot;ttf_write&quot;</span><span class="p">:</span> <span class="s2">&quot;Drinks can be brought in but alcohol is prohibited.&quot;</span><span class="p">,</span> <span class="s2">&quot;font&quot;</span><span class="p">:</span> <span class="s2">&quot;mplus-1p-medium.ttf&quot;</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">&quot;comment&quot;</span><span class="p">:</span><span class="s2">&quot;==barcode==&quot;</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">&quot;pos&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">260</span><span class="p">,</span> <span class="mi">930</span><span class="p">],</span> <span class="s2">&quot;codebar&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;0004693003005000&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">100</span><span class="p">]},</span>
+        <span class="p">{</span><span class="s2">&quot;pos&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">160</span><span class="p">,</span> <span class="mi">1000</span><span class="p">],</span> <span class="s2">&quot;expansion&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="s2">&quot;bold_text&quot;</span><span class="p">:</span> <span class="s2">&quot;0004693003005000&quot;</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">&quot;comment&quot;</span><span class="p">:</span><span class="s2">&quot;==ticket parted==&quot;</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">&quot;pos&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">780</span><span class="p">,</span> <span class="mi">1610</span><span class="p">],</span> <span class="s2">&quot;expansion&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">2500</span><span class="p">],</span> <span class="s2">&quot;ttf_write&quot;</span><span class="p">:</span> <span class="s2">&quot;TEST&quot;</span><span class="p">,</span> <span class="s2">&quot;font&quot;</span><span class="p">:</span> <span class="s2">&quot;mplus-1p-medium.ttf&quot;</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">&quot;pos&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">670</span><span class="p">,</span> <span class="mi">1610</span><span class="p">],</span> <span class="s2">&quot;expansion&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">2500</span><span class="p">],</span> <span class="s2">&quot;ttf_write&quot;</span><span class="p">:</span> <span class="s2">&quot;CONSERT&quot;</span><span class="p">,</span> <span class="s2">&quot;font&quot;</span><span class="p">:</span> <span class="s2">&quot;mplus-1p-medium.ttf&quot;</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">&quot;pos&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">620</span><span class="p">,</span> <span class="mi">1630</span><span class="p">],</span> <span class="s2">&quot;expansion&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">2000</span><span class="p">],</span> <span class="s2">&quot;ttf_write&quot;</span><span class="p">:</span> <span class="s2">&quot;Friday, February 14, 2014 14:00&quot;</span><span class="p">,</span> <span class="s2">&quot;font&quot;</span><span class="p">:</span> <span class="s2">&quot;mplus-1p-medium.ttf&quot;</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">&quot;pos&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">580</span><span class="p">,</span> <span class="mi">1630</span><span class="p">],</span> <span class="s2">&quot;expansion&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">2000</span><span class="p">],</span> <span class="s2">&quot;ttf_write&quot;</span><span class="p">:</span> <span class="s2">&quot;14:00&quot;</span><span class="p">,</span> <span class="s2">&quot;font&quot;</span><span class="p">:</span> <span class="s2">&quot;mplus-1p-medium.ttf&quot;</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">&quot;pos&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">420</span><span class="p">,</span> <span class="mi">1610</span><span class="p">],</span> <span class="s2">&quot;expansion&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">2000</span><span class="p">],</span> <span class="s2">&quot;ttf_write&quot;</span><span class="p">:</span> <span class="s2">&quot;Free seat&quot;</span><span class="p">,</span> <span class="s2">&quot;font&quot;</span><span class="p">:</span> <span class="s2">&quot;mplus-1p-medium.ttf&quot;</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">&quot;pos&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">330</span><span class="p">,</span> <span class="mi">1600</span><span class="p">],</span> <span class="s2">&quot;expansion&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">2000</span><span class="p">],</span> <span class="s2">&quot;ttf_write&quot;</span><span class="p">:</span> <span class="s2">&quot;$5.00&quot;</span><span class="p">,</span> <span class="s2">&quot;font&quot;</span><span class="p">:</span> <span class="s2">&quot;mplus-1p-medium.ttf&quot;</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">&quot;print&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
+    <span class="p">]</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+<p>usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">json_str</span> <span class="o">=</span> <span class="s2">&quot;(defined adobe)&quot;</span>
+<span class="n">comm</span> <span class="o">=</span> <span class="n">SG412R_Status5</span><span class="p">()</span>
+<span class="n">gen</span> <span class="o">=</span> <span class="n">LabelGenerator</span><span class="p">()</span>
+<span class="n">parser</span> <span class="o">=</span> <span class="n">JsonParser</span><span class="p">(</span><span class="n">gen</span><span class="p">,</span> <span class="n">json_str</span><span class="p">)</span>
+<span class="n">parser</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">comm</span><span class="p">)</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>generator</strong> – Instances of LabelGenerator or its derived classes</li>
+<li><strong>json</strong> (<em>str</em><em>, or </em><em>return value of json.loads</em><em>(</em><em>)</em>) – JSON which describes contents to be printed. If a character string is given, it is passed to json.load()</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="sbpl.JsonParser.parse">
+<code class="descname">parse</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#JsonParser.parse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.JsonParser.parse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Issue the SBPL command while reading the contents of JSON.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="sbpl.JsonParser.parse_line">
+<code class="descname">parse_line</code><span class="sig-paren">(</span><em>line</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#JsonParser.parse_line"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.JsonParser.parse_line" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert the instruction described in JSON to SBPL command</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>line</strong> – The dict expressing the instruction described in JSON</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="sbpl.JsonParser.post">
+<code class="descname">post</code><span class="sig-paren">(</span><em>comm</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#JsonParser.post"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.JsonParser.post" title="Permalink to this definition">¶</a></dt>
+<dd><p>Execute remote printing using communication settings described in JSON</p>
+<p>When the print destination is fixed, it is not necessary to include it in JSON, 
+but it is required to select _comm_setting manually or not to call this method.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>comm</strong> – Communication module for SATO printer. For example, an instance of SG412R_Status5</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="sbpl.LabelGenerator">
+<em class="property">class </em><code class="descclassname">sbpl.</code><code class="descname">LabelGenerator</code><span class="sig-paren">(</span><em>packets=bytearray(b'')</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#LabelGenerator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.LabelGenerator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Generate a byte stream to be printed by SBPL.</p>
+<p>Various commands for printing are held as methods, and by executing them, a byte string of SBPL is generated and held.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>packets</strong> (<em>bytearray</em>) – (optional) Cached bytearray will be the printing packet</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="sbpl.LabelGenerator.barcode_ratio">
+<code class="descname">barcode_ratio</code><span class="sig-paren">(</span><em>ratio='1:3'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#LabelGenerator.barcode_ratio"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.LabelGenerator.barcode_ratio" title="Permalink to this definition">¶</a></dt>
+<dd><p>Change the size of the barcode by changing the space between the bars.</p>
+<p>However, there is a barcode that can not be output if it is set to other than ‘1:3’.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="sbpl.LabelGenerator.begin_packet">
+<code class="descname">begin_packet</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#LabelGenerator.begin_packet"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.LabelGenerator.begin_packet" title="Permalink to this definition">¶</a></dt>
+<dd><p>A packet must first execute this method at the beginning.</p>
+<p>You must execute end_packet() later.
+To print multiple pages, execute the necessary number of begin_packet()/end_packet()</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="sbpl.LabelGenerator.begin_page">
+<code class="descname">begin_page</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#LabelGenerator.begin_page"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.LabelGenerator.begin_page" title="Permalink to this definition">¶</a></dt>
+<dd><p>Each page must first execute this command at the beginning.</p>
+<p>You must execute begin_packet() just before.
+You must execute end_page() later.
+To print multiple pages, execute the necessary number of begin_page()/end_page()</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="sbpl.LabelGenerator.bold_text">
+<code class="descname">bold_text</code><span class="sig-paren">(</span><em>text</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#LabelGenerator.bold_text"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.LabelGenerator.bold_text" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print specified character string with built-in bold font</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>text</strong> – String to output. Only alphanumeric symbols are valid</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="sbpl.LabelGenerator.codabar">
+<code class="descname">codabar</code><span class="sig-paren">(</span><em>text</em>, <em>pitch</em>, <em>height</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#LabelGenerator.codabar"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.LabelGenerator.codabar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Output barcode of NW-7(CODABAR) standard</p>
+<p>Valid characters: numbers, A,B,C,D, symbols. (-,$,/, . ,+)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>pitch</strong> – Barcode thickness. When the number is increased, the width suddenly increases</li>
+<li><strong>height</strong> – Bar length of the bars. Pixel unit(1-999)</li>
+<li><strong>text</strong> – String to print.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="sbpl.LabelGenerator.code_128">
+<code class="descname">code_128</code><span class="sig-paren">(</span><em>text</em>, <em>pitch</em>, <em>height</em>, <em>code='B'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#LabelGenerator.code_128"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.LabelGenerator.code_128" title="Permalink to this definition">¶</a></dt>
+<dd><p>Output barcode of CODE 128 standard</p>
+<p>Valid characters: numbers, alphabets, symbols.（-,.,(space),＊,$,／,+,%） Four types of shift characters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>pitch</strong> – Barcode thickness. When the number is increased, the width suddenly increases</li>
+<li><strong>height</strong> – Bar length of the bars. Pixel unit(1-999)</li>
+<li><strong>text</strong> – String to print.</li>
+<li><strong>code</strong> – Specify code start allowed by Code 128. A, B, C are valid, default is B. See the standard for details.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="sbpl.LabelGenerator.code_39">
+<code class="descname">code_39</code><span class="sig-paren">(</span><em>text</em>, <em>pitch</em>, <em>height</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#LabelGenerator.code_39"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.LabelGenerator.code_39" title="Permalink to this definition">¶</a></dt>
+<dd><p>Output barcode of CODE 39 standard</p>
+<p>Valid characters: numbers, alphabets, symbols（-,.,(space),＊,$,／,+,%）の43 charactors</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>pitch</strong> – Barcode thickness. When the number is increased, the width suddenly increases</li>
+<li><strong>height</strong> – Bar length of the bars. Pixel unit(1-999)</li>
+<li><strong>text</strong> – String to print. Automatically enclosed in ‘*’</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="sbpl.LabelGenerator.code_93">
+<code class="descname">code_93</code><span class="sig-paren">(</span><em>text</em>, <em>pitch</em>, <em>height</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#LabelGenerator.code_93"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.LabelGenerator.code_93" title="Permalink to this definition">¶</a></dt>
+<dd><p>Output barcode of CODE 93 standard</p>
+<p>Valid characters: numbers, alphabets, symbols.（-,.,(space),＊,$,／,+,%） Four types of shift characters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>pitch</strong> – Barcode thickness. When the number is increased, the width suddenly increases</li>
+<li><strong>height</strong> – Bar length of the bars. Pixel unit(1-999)</li>
+<li><strong>text</strong> – String to print.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="sbpl.LabelGenerator.end_packet">
+<code class="descname">end_packet</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#LabelGenerator.end_packet"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.LabelGenerator.end_packet" title="Permalink to this definition">¶</a></dt>
+<dd><p>A packet must last execute this method at the ending.</p>
+<p>You must execute begin_packet() first.
+To print multiple pages, execute the necessary number of begin_packet()/end_packet()</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="sbpl.LabelGenerator.end_page">
+<code class="descname">end_page</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#LabelGenerator.end_page"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.LabelGenerator.end_page" title="Permalink to this definition">¶</a></dt>
+<dd><p>Each page must last execute this command at the ending.</p>
+<p>You must execute begin_page() first.
+You must execute end_packet() immediately after that.
+To print multiple pages, execute the necessary number of begin_page()/end_page()</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="sbpl.LabelGenerator.expansion">
+<code class="descname">expansion</code><span class="sig-paren">(</span><em>exp=(1</em>, <em>1)</em>, <em>pitch=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#LabelGenerator.expansion"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.LabelGenerator.expansion" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specify magnification and pitch of character printing following this command</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>exp</strong> – Two-dimensional coordinates representing magnification (H_expansion,y_expansion) e.g. (1,2)</li>
+<li><strong>pitch</strong> – Specify the pitch between characters in pixels (0-99)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="sbpl.LabelGenerator.extend_str">
+<code class="descname">extend_str</code><span class="sig-paren">(</span><em>tp</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#LabelGenerator.extend_str"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.LabelGenerator.extend_str" title="Permalink to this definition">¶</a></dt>
+<dd><p>a list of arbitrary character strings into a string and then encode() and add into the bytearray</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="sbpl.LabelGenerator.glyph_offset">
+<code class="descname">glyph_offset</code><span class="sig-paren">(</span><em>pos</em>, <em>offset</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#LabelGenerator.glyph_offset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.LabelGenerator.glyph_offset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Coordinate offset calculation corresponding to rotate</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="sbpl.LabelGenerator.itf2of5">
+<code class="descname">itf2of5</code><span class="sig-paren">(</span><em>text</em>, <em>pitch</em>, <em>height</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#LabelGenerator.itf2of5"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.LabelGenerator.itf2of5" title="Permalink to this definition">¶</a></dt>
+<dd><p>Output barcode of Interleaved 2 of 5 standard</p>
+<p>Valid characters: numbers</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>pitch</strong> – Barcode thickness. When the number is increased, the width suddenly increases</li>
+<li><strong>height</strong> – Bar length of the bars. Pixel unit(1-999)</li>
+<li><strong>text</strong> – String to print.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="sbpl.LabelGenerator.jan_13">
+<code class="descname">jan_13</code><span class="sig-paren">(</span><em>text</em>, <em>pitch</em>, <em>height</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#LabelGenerator.jan_13"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.LabelGenerator.jan_13" title="Permalink to this definition">¶</a></dt>
+<dd><p>Output barcode of JAN 13 standard</p>
+<p>Valid characters: numbers</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>pitch</strong> – Barcode thickness. When the number is increased, the width suddenly increases</li>
+<li><strong>height</strong> – Bar length of the bars. Pixel unit(1-999)</li>
+<li><strong>text</strong> – String to print. Must be 11 or 13 chars.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="sbpl.LabelGenerator.jan_8">
+<code class="descname">jan_8</code><span class="sig-paren">(</span><em>text</em>, <em>pitch</em>, <em>height</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#LabelGenerator.jan_8"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.LabelGenerator.jan_8" title="Permalink to this definition">¶</a></dt>
+<dd><p>Output barcode of JAN 8 standard</p>
+<p>Valid characters: numbers</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>pitch</strong> – Barcode thickness. When the number is increased, the width suddenly increases</li>
+<li><strong>height</strong> – Bar length of the bars. Pixel unit(1-999)</li>
+<li><strong>text</strong> – String to print. Must be 6 or 8 chars.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="sbpl.LabelGenerator.line">
+<code class="descname">line</code><span class="sig-paren">(</span><em>length</em>, <em>thickness</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#LabelGenerator.line"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.LabelGenerator.line" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pull a vertical or horizontal lines (diagonal lines can not be pulled)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>length</strong> – Specify only one of x or y in two-dimensional coordinates e.g. (123, 0) or (0, 456)</li>
+<li><strong>thickness</strong> – Line thickness (1-99)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="sbpl.LabelGenerator.packet_for_with">
+<code class="descname">packet_for_with</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#LabelGenerator.packet_for_with"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.LabelGenerator.packet_for_with" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>with gen.packet_for_with():</dt>
+<dd>gen.somemethod() # generate inner packets</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="sbpl.LabelGenerator.page_for_with">
+<code class="descname">page_for_with</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#LabelGenerator.page_for_with"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.LabelGenerator.page_for_with" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>with gen.page_for_with():</dt>
+<dd>gen.somemethod() # generate inner the page</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="sbpl.LabelGenerator.pos">
+<code class="descname">pos</code><span class="sig-paren">(</span><em>position</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#LabelGenerator.pos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.LabelGenerator.pos" title="Permalink to this definition">¶</a></dt>
+<dd><p>The start coordinates of the printing command to be continued are made.</p>
+<p>Note that when you see a label standing behind the printer and its printed label, 
+its upper left coordinate is (0, 0). x is rightward and y is downward. 
+This instruction does not change with the rotate instruction.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>position</strong> – Two-dimensional coordinates representing the position(x,y) e.g. (100, 200)</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="sbpl.LabelGenerator.print">
+<code class="descname">print</code><span class="sig-paren">(</span><em>num=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#LabelGenerator.print"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.LabelGenerator.print" title="Permalink to this definition">¶</a></dt>
+<dd><p>How many copies of the current label should be printed.</p>
+<p>If this command is not executed, labels are not printed.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="sbpl.LabelGenerator.rectangle">
+<code class="descname">rectangle</code><span class="sig-paren">(</span><em>size</em>, <em>thickness</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#LabelGenerator.rectangle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.LabelGenerator.rectangle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw a rectangle</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>size</strong> – (width,height) e.g. (123, 456)</li>
+<li><strong>thickness</strong> – Line thickness e.g.(2,2)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="sbpl.LabelGenerator.rotate_0">
+<code class="descname">rotate_0</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#LabelGenerator.rotate_0"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.LabelGenerator.rotate_0" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set rotation of coordinate axis to 0 degree</p>
+<p>This is the default orientation of SATO’s printer, 
+and when you look at the label printed standing behind the printer, 
+it is the direction in which the string is printed just as you have seen.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="sbpl.LabelGenerator.rotate_180">
+<code class="descname">rotate_180</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#LabelGenerator.rotate_180"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.LabelGenerator.rotate_180" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set rotation of coordinate axis to 180 degree</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="sbpl.LabelGenerator.rotate_270">
+<code class="descname">rotate_270</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#LabelGenerator.rotate_270"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.LabelGenerator.rotate_270" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set rotation of coordinate axis to 0 degree</p>
+<p>When you see the label printed on the right side of the printer, 
+it is the orientation in which the string is printed exactly as you saw. 
+You will execute this command if you want to use the paper sideways.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="sbpl.LabelGenerator.rotate_90">
+<code class="descname">rotate_90</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#LabelGenerator.rotate_90"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.LabelGenerator.rotate_90" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set rotation of coordinate axis to 90 degree</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="sbpl.LabelGenerator.set_font_path">
+<code class="descname">set_font_path</code><span class="sig-paren">(</span><em>getfontpath</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#LabelGenerator.set_font_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.LabelGenerator.set_font_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resolve the PATH of the font file.</p>
+<p>If a font file exists other than the current directory, 
+it is necessary to supplement this font path by calling this method beforehand. 
+Give a function.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>getfontpath</strong> – Specify a function that takes str as an argument and returns str</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="sbpl.LabelGenerator.set_label_size">
+<code class="descname">set_label_size</code><span class="sig-paren">(</span><em>size</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#LabelGenerator.set_label_size"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.LabelGenerator.set_label_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specify the size of the label to be printed.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>size</strong> – Specify the size of the label in two-dimensional(width,height) pixel coordinates. e.g. (100, 200)</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="sbpl.LabelGenerator.shift_jis">
+<code class="descname">shift_jis</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#LabelGenerator.shift_jis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.LabelGenerator.shift_jis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shift_JIS is specified as the character code to be sent to the printer.</p>
+<p>It must be executed when printing multi-byte character strings.
+However, the string given to each method must be as str (automatically encode() is executed)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="sbpl.LabelGenerator.skip_cutting">
+<code class="descname">skip_cutting</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#LabelGenerator.skip_cutting"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.LabelGenerator.skip_cutting" title="Permalink to this definition">¶</a></dt>
+<dd><p>Designate the printer not to cut the current label.</p>
+<p>The behavior of this command varies depending on the settings 
+of the printer itself. Use it with setting to cut every page.
+This command is valid only on the label that was executed, 
+and it needs to be executed again on the next page.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="sbpl.LabelGenerator.to_bytes">
+<code class="descname">to_bytes</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#LabelGenerator.to_bytes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.LabelGenerator.to_bytes" title="Permalink to this definition">¶</a></dt>
+<dd><p>bytearray to bytes</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="sbpl.LabelGenerator.ttf_face">
+<code class="descname">ttf_face</code><span class="sig-paren">(</span><em>font</em>, <em>expansion</em>, <em>pitch</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#LabelGenerator.ttf_face"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.LabelGenerator.ttf_face" title="Permalink to this definition">¶</a></dt>
+<dd><p>Freetype.Face is acquired using Freetype-py.</p>
+<p>In the windows environment, dll is required under the name “freetype.dll” in the execution directory.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="sbpl.LabelGenerator.ttf_write">
+<code class="descname">ttf_write</code><span class="sig-paren">(</span><em>text</em>, <em>pos</em>, <em>maxwidth</em>, <em>align</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#LabelGenerator.ttf_write"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.LabelGenerator.ttf_write" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print with a GB instruction while rendering TrueType fonts</p>
+<p>As GB instruction can usually print only one character, this class realizes processing for each character</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>text</strong> – The output character string. Line breaks are ignored. Halfwidth and double-byte spaces are treated as fixed width shifted respectively.</li>
+<li><strong>pos</strong> – Start coordinate to be printed. The positional relationship between pos and character string changes by rotate.</li>
+<li><strong>maxwidth</strong> – (optional)Specify the maximum width of the drawing area. The start position when center or right is specified with align is changed. Trimed when exceeding the maximum width.</li>
+<li><strong>align</strong> – (optional)Change the left and right position of the character string. center is the center of maxwidth, right is the right end.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="sbpl.LabelGenerator.write_text">
+<code class="descname">write_text</code><span class="sig-paren">(</span><em>text</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#LabelGenerator.write_text"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.LabelGenerator.write_text" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print specified character string with built-in font</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>text</strong> (<em>str</em>) – String to output. For multibyte characters, it must be a character that exists in CP932</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="sbpl.SG412R_Status5">
+<em class="property">class </em><code class="descclassname">sbpl.</code><code class="descname">SG412R_Status5</code><a class="reference internal" href="_modules/sbpl.html#SG412R_Status5"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.SG412R_Status5" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A communication class for printing when the printer of SATO is operating on STATUS 5</p>
+<p>Since the communication specification when the printer
+is operating in STATUS 5 is not disclosed, 
+this module was created by analyzing TCP / IP packet instead of manual.</p>
+<p>Since the author confirmed the operation only with SG412R-ex, 
+there is a possibility that it will not work on other models. 
+In that case, please refer to this class and implement it yourself. Welcome your post.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comm</span> <span class="o">=</span> <span class="n">SG412R_Status5</span><span class="p">()</span>
+<span class="k">with</span> <span class="n">comm</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;192.168.0.251&quot;</span><span class="p">,</span> <span class="mi">1024</span><span class="p">):</span>
+    <span class="n">comm</span><span class="o">.</span><span class="n">prepare</span><span class="p">()</span>
+    <span class="n">gen</span> <span class="o">=</span> <span class="n">LabelGenerator</span><span class="p">()</span>
+    <span class="c1"># generate label...</span>
+    <span class="n">comm</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">gen</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">())</span>
+    <span class="n">comm</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="sbpl.SG412R_Status5.close">
+<code class="descname">close</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#SG412R_Status5.close"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.SG412R_Status5.close" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="sbpl.SG412R_Status5.finish">
+<code class="descname">finish</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#SG412R_Status5.finish"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.SG412R_Status5.finish" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="sbpl.SG412R_Status5.open">
+<code class="descname">open</code><span class="sig-paren">(</span><em>host</em>, <em>port</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#SG412R_Status5.open"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.SG412R_Status5.open" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="sbpl.SG412R_Status5.prepare">
+<code class="descname">prepare</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#SG412R_Status5.prepare"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.SG412R_Status5.prepare" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="sbpl.SG412R_Status5.send">
+<code class="descname">send</code><span class="sig-paren">(</span><em>packets</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#SG412R_Status5.send"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.SG412R_Status5.send" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="sbpl.TtfGlyph">
+<em class="property">class </em><code class="descclassname">sbpl.</code><code class="descname">TtfGlyph</code><span class="sig-paren">(</span><em>c</em>, <em>face</em>, <em>expansion</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#TtfGlyph"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.TtfGlyph" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Handle glyph data for one character of TrueType font.</p>
+<p>Fonts are rendered by FreeType-py and kept by instances of this class.
+Each glyph is rendered as a 1 bpp monochrome bitmap and issued as a GB command.
+It can be cached in units of character strings and SBPL can be actually 
+generated after calculating the range of output character strings.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>c</strong> (<em>str</em>) – The character to render. len(c)==1</li>
+<li><strong>face</strong> (<em>freetype.face</em>) – freetype.face</li>
+<li><strong>expansion</strong> (<em>int</em>) – Font expansion. maybe expansion = XXpt*72</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="sbpl.TtfGlyph.generate">
+<code class="descname">generate</code><span class="sig-paren">(</span><em>gen</em>, <em>position</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#TtfGlyph.generate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.TtfGlyph.generate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print the stored glyph data</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>gen</strong> (<a class="reference internal" href="#sbpl.LabelGenerator" title="sbpl.LabelGenerator"><em>LabelGenerator</em></a>) – Generator</li>
+<li><strong>position</strong> (<em>tuple</em><em> or </em><em>list of 2-int</em>) – Coordinates to be printed</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="sbpl.TtfGlyph.offset">
+<code class="descname">offset</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#TtfGlyph.offset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.TtfGlyph.offset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a tuple of the offset to the next character</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="sbpl.TtfGlyph.offset_top">
+<code class="descname">offset_top</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#TtfGlyph.offset_top"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.TtfGlyph.offset_top" title="Permalink to this definition">¶</a></dt>
+<dd><p>Vertical offset of character glyph</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="sbpl.TtfGlyph.offset_x">
+<code class="descname">offset_x</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#TtfGlyph.offset_x"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.TtfGlyph.offset_x" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the offset to the next character</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="sbpl.TtfGlyph.to_bytes">
+<code class="descname">to_bytes</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#TtfGlyph.to_bytes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.TtfGlyph.to_bytes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a raw bitmap of 1bpp specified by (pwidth, pheight)</p>
+<p>The bitmap requested by the ‘GB’ command is a monochrome 1bpp, 
+it must be a unit of 8 × 8, and the number of pixels in the vertical 
+and horizontal directions must be the same.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">bytearray</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">sbpl package</a><ul>
+<li><a class="reference internal" href="#module-sbpl">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to sbpl’s documentation!</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/sbpl.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to sbpl’s documentation!"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">sbpl 0.1.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, KATO Kanryu.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.2.
+    </div>
+  </body>
+</html>
