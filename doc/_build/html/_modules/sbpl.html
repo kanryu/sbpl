@@ -53,6 +53,7 @@
 <span class="sd">but since it is Pure Python, you can add and change features yourself.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">socket</span>
 
 <span class="n">STX</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\x02</span><span class="s2">&quot;</span>
 <span class="n">ESC</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\x1b</span><span class="s2">&quot;</span>
@@ -163,7 +164,7 @@
 <span class="sd">        Returns a raw bitmap of 1bpp specified by (pwidth, pheight)</span>
 
 <span class="sd">        The bitmap requested by the &#39;GB&#39; command is a monochrome 1bpp, </span>
-<span class="sd">        it must be a unit of 8 × 8, and the number of pixels in the vertical </span>
+<span class="sd">        it must be a unit of 8×8, and the number of pixels in the vertical </span>
 <span class="sd">        and horizontal directions must be the same.</span>
 
 <span class="sd">        :rtype: bytearray</span>
@@ -666,7 +667,7 @@
 <span class="sd">    for example::</span>
 
 <span class="sd">        [</span>
-<span class="sd">            {&quot;host&quot;:&quot;label_printer1&quot;, &quot;port&quot;: &quot;1024&quot;, &quot;communication&quot;: &quot;SG412R_Status5&quot;},</span>
+<span class="sd">            {&quot;host&quot;:&quot;192.168.0.251&quot;, &quot;port&quot;: 1024, &quot;communication&quot;: &quot;SG412R_Status5&quot;},</span>
 <span class="sd">            [</span>
 <span class="sd">                {&quot;set_label_size&quot;: [1000, 3000]},</span>
 <span class="sd">                {&quot;shift_jis&quot;: 0},</span>
@@ -697,25 +698,28 @@
 <span class="sd">        json_str = &quot;(defined adobe)&quot;</span>
 <span class="sd">        comm = SG412R_Status5()</span>
 <span class="sd">        gen = LabelGenerator()</span>
-<span class="sd">        parser = JsonParser(gen, json_str)</span>
+<span class="sd">        parser = JsonParser(gen)</span>
+<span class="sd">        parser.parse(json_str)</span>
 <span class="sd">        parser.post(comm)</span>
 
 
 <span class="sd">    :param generator: Instances of LabelGenerator or its derived classes</span>
-<span class="sd">    :param json: JSON which describes contents to be printed. If a character string is given, it is passed to json.load()</span>
-<span class="sd">    :type json: str, or return value of json.loads()</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">_gen</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">_comm_setting</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">_json</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">generator</span><span class="p">,</span> <span class="n">json_str</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">generator</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_gen</span> <span class="o">=</span> <span class="n">generator</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">json_str</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">json</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;str&#39;</span> <span class="k">else</span> <span class="n">json</span>
 
-<div class="viewcode-block" id="JsonParser.parse"><a class="viewcode-back" href="../sbpl.html#sbpl.JsonParser.parse">[docs]</a>    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="JsonParser.parse"><a class="viewcode-back" href="../sbpl.html#sbpl.JsonParser.parse">[docs]</a>    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_str</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Issue the SBPL command while reading the contents of JSON.</span>
+<span class="sd">        </span>
+<span class="sd">        :param json: JSON which describes contents to be printed. If a character string is given, it is passed to json.load()</span>
+<span class="sd">        :type json: str, or return value of json.loads()</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_json</span> <span class="o">=</span> <span class="n">json_str</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">json_str</span><span class="p">)</span> <span class="o">==</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">json_str</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">page</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_json</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">page</span><span class="p">)</span> <span class="o">==</span> <span class="nb">dict</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_comm_setting</span> <span class="o">=</span> <span class="n">page</span>
@@ -814,8 +818,18 @@
 <span class="sd">        comm = SG412R_Status5()</span>
 <span class="sd">        with comm.open(&quot;192.168.0.251&quot;, 1024):</span>
 <span class="sd">            comm.prepare()</span>
-<span class="sd">            gen = LabelGenerator()</span>
 <span class="sd">            # generate label...</span>
+<span class="sd">            gen = LabelGenerator()</span>
+<span class="sd">            with self._gen.packet_for_with():</span>
+<span class="sd">                with self._gen.page_for_with():</span>
+<span class="sd">                    gen.set_label_size((1000, 3000))</span>
+<span class="sd">                    gen.rotate_270()</span>
+<span class="sd">                    gen.pos((260, 930))</span>
+<span class="sd">                    gen.codebar((&quot;0004693003005000&quot;, 3, 100))</span>
+<span class="sd">                    gen.pos((160, 1000))</span>
+<span class="sd">                    gen.expansion((1,1))</span>
+<span class="sd">                    gen.bold_text(&quot;0004693003005000&quot;)</span>
+<span class="sd">                    gen.print()</span>
 <span class="sd">            comm.send(gen.to_bytes())</span>
 <span class="sd">            comm.finish()</span>
 <span class="sd">    &quot;&quot;&quot;</span>

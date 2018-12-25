@@ -13,6 +13,7 @@ This module is a prototype and may not satisfy your work,
 but since it is Pure Python, you can add and change features yourself.
 """
 import json
+import socket
 
 STX = "\x02"
 ESC = "\x1b"
@@ -123,7 +124,7 @@ class TtfGlyph:
         Returns a raw bitmap of 1bpp specified by (pwidth, pheight)
 
         The bitmap requested by the 'GB' command is a monochrome 1bpp, 
-        it must be a unit of 8 × 8, and the number of pixels in the vertical 
+        it must be a unit of 8×8, and the number of pixels in the vertical 
         and horizontal directions must be the same.
 
         :rtype: bytearray
@@ -626,7 +627,7 @@ class JsonParser:
     for example::
 
         [
-            {"host":"label_printer1", "port": "1024", "communication": "SG412R_Status5"},
+            {"host":"192.168.0.251", "port": 1024, "communication": "SG412R_Status5"},
             [
                 {"set_label_size": [1000, 3000]},
                 {"shift_jis": 0},
@@ -657,25 +658,28 @@ class JsonParser:
         json_str = "(defined adobe)"
         comm = SG412R_Status5()
         gen = LabelGenerator()
-        parser = JsonParser(gen, json_str)
+        parser = JsonParser(gen)
+        parser.parse(json_str)
         parser.post(comm)
 
 
     :param generator: Instances of LabelGenerator or its derived classes
-    :param json: JSON which describes contents to be printed. If a character string is given, it is passed to json.load()
-    :type json: str, or return value of json.loads()
     """
     _gen = None
     _comm_setting = None
-    _json = None
-    def __init__(self, generator, json_str):
+    def __init__(self, generator):
         self._gen = generator
-        self._json = json.loads(json_str, encoding='utf-8') if type(json) == 'str' else json
 
-    def parse(self):
+    def parse(self, json_str):
         """
         Issue the SBPL command while reading the contents of JSON.
+        
+        :param json: JSON which describes contents to be printed. If a character string is given, it is passed to json.load()
+        :type json: str, or return value of json.loads()
         """
+        self._json = json_str
+        if type(json_str) == str:
+            self._json = json.loads(json_str, encoding='utf-8')
         for page in self._json:
             if type(page) == dict:
                 self._comm_setting = page
@@ -774,8 +778,18 @@ class SG412R_Status5:
         comm = SG412R_Status5()
         with comm.open("192.168.0.251", 1024):
             comm.prepare()
-            gen = LabelGenerator()
             # generate label...
+            gen = LabelGenerator()
+            with self._gen.packet_for_with():
+                with self._gen.page_for_with():
+                    gen.set_label_size((1000, 3000))
+                    gen.rotate_270()
+                    gen.pos((260, 930))
+                    gen.codebar(("0004693003005000", 3, 100))
+                    gen.pos((160, 1000))
+                    gen.expansion((1,1))
+                    gen.bold_text("0004693003005000")
+                    gen.print()
             comm.send(gen.to_bytes())
             comm.finish()
     """

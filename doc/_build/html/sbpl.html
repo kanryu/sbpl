@@ -54,7 +54,7 @@ by a normal Windows printer.</p>
 but since it is Pure Python, you can add and change features yourself.</p>
 <dl class="class">
 <dt id="sbpl.JsonParser">
-<em class="property">class </em><code class="descclassname">sbpl.</code><code class="descname">JsonParser</code><span class="sig-paren">(</span><em>generator</em>, <em>json_str</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#JsonParser"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.JsonParser" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">sbpl.</code><code class="descname">JsonParser</code><span class="sig-paren">(</span><em>generator</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#JsonParser"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.JsonParser" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Provide functions that can specify printing by SBPL with JSON.</p>
 <p>Even a simple example of SBPL printing requires the execution of many commands. 
@@ -67,7 +67,7 @@ and correction becomes difficult. So we made it possible to designate all at onc
 </ul>
 <p>for example:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span>
-    <span class="p">{</span><span class="s2">&quot;host&quot;</span><span class="p">:</span><span class="s2">&quot;label_printer1&quot;</span><span class="p">,</span> <span class="s2">&quot;port&quot;</span><span class="p">:</span> <span class="s2">&quot;1024&quot;</span><span class="p">,</span> <span class="s2">&quot;communication&quot;</span><span class="p">:</span> <span class="s2">&quot;SG412R_Status5&quot;</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">&quot;host&quot;</span><span class="p">:</span><span class="s2">&quot;192.168.0.251&quot;</span><span class="p">,</span> <span class="s2">&quot;port&quot;</span><span class="p">:</span> <span class="mi">1024</span><span class="p">,</span> <span class="s2">&quot;communication&quot;</span><span class="p">:</span> <span class="s2">&quot;SG412R_Status5&quot;</span><span class="p">},</span>
     <span class="p">[</span>
         <span class="p">{</span><span class="s2">&quot;set_label_size&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">3000</span><span class="p">]},</span>
         <span class="p">{</span><span class="s2">&quot;shift_jis&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
@@ -98,7 +98,8 @@ and correction becomes difficult. So we made it possible to designate all at onc
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">json_str</span> <span class="o">=</span> <span class="s2">&quot;(defined adobe)&quot;</span>
 <span class="n">comm</span> <span class="o">=</span> <span class="n">SG412R_Status5</span><span class="p">()</span>
 <span class="n">gen</span> <span class="o">=</span> <span class="n">LabelGenerator</span><span class="p">()</span>
-<span class="n">parser</span> <span class="o">=</span> <span class="n">JsonParser</span><span class="p">(</span><span class="n">gen</span><span class="p">,</span> <span class="n">json_str</span><span class="p">)</span>
+<span class="n">parser</span> <span class="o">=</span> <span class="n">JsonParser</span><span class="p">(</span><span class="n">gen</span><span class="p">)</span>
+<span class="n">parser</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">json_str</span><span class="p">)</span>
 <span class="n">parser</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">comm</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -106,18 +107,22 @@ and correction becomes difficult. So we made it possible to designate all at onc
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>generator</strong> – Instances of LabelGenerator or its derived classes</li>
-<li><strong>json</strong> (<em>str</em><em>, or </em><em>return value of json.loads</em><em>(</em><em>)</em>) – JSON which describes contents to be printed. If a character string is given, it is passed to json.load()</li>
-</ul>
-</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>generator</strong> – Instances of LabelGenerator or its derived classes</td>
 </tr>
 </tbody>
 </table>
 <dl class="method">
 <dt id="sbpl.JsonParser.parse">
-<code class="descname">parse</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#JsonParser.parse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.JsonParser.parse" title="Permalink to this definition">¶</a></dt>
+<code class="descname">parse</code><span class="sig-paren">(</span><em>json_str</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#JsonParser.parse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.JsonParser.parse" title="Permalink to this definition">¶</a></dt>
 <dd><p>Issue the SBPL command while reading the contents of JSON.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>json</strong> (<em>str</em><em>, or </em><em>return value of json.loads</em><em>(</em><em>)</em>) – JSON which describes contents to be printed. If a character string is given, it is passed to json.load()</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
@@ -613,8 +618,18 @@ In that case, please refer to this class and implement it yourself. Welcome your
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comm</span> <span class="o">=</span> <span class="n">SG412R_Status5</span><span class="p">()</span>
 <span class="k">with</span> <span class="n">comm</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;192.168.0.251&quot;</span><span class="p">,</span> <span class="mi">1024</span><span class="p">):</span>
     <span class="n">comm</span><span class="o">.</span><span class="n">prepare</span><span class="p">()</span>
-    <span class="n">gen</span> <span class="o">=</span> <span class="n">LabelGenerator</span><span class="p">()</span>
     <span class="c1"># generate label...</span>
+    <span class="n">gen</span> <span class="o">=</span> <span class="n">LabelGenerator</span><span class="p">()</span>
+    <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gen</span><span class="o">.</span><span class="n">packet_for_with</span><span class="p">():</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gen</span><span class="o">.</span><span class="n">page_for_with</span><span class="p">():</span>
+            <span class="n">gen</span><span class="o">.</span><span class="n">set_label_size</span><span class="p">((</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">3000</span><span class="p">))</span>
+            <span class="n">gen</span><span class="o">.</span><span class="n">rotate_270</span><span class="p">()</span>
+            <span class="n">gen</span><span class="o">.</span><span class="n">pos</span><span class="p">((</span><span class="mi">260</span><span class="p">,</span> <span class="mi">930</span><span class="p">))</span>
+            <span class="n">gen</span><span class="o">.</span><span class="n">codebar</span><span class="p">((</span><span class="s2">&quot;0004693003005000&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">100</span><span class="p">))</span>
+            <span class="n">gen</span><span class="o">.</span><span class="n">pos</span><span class="p">((</span><span class="mi">160</span><span class="p">,</span> <span class="mi">1000</span><span class="p">))</span>
+            <span class="n">gen</span><span class="o">.</span><span class="n">expansion</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
+            <span class="n">gen</span><span class="o">.</span><span class="n">bold_text</span><span class="p">(</span><span class="s2">&quot;0004693003005000&quot;</span><span class="p">)</span>
+            <span class="n">gen</span><span class="o">.</span><span class="n">print</span><span class="p">()</span>
     <span class="n">comm</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">gen</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">())</span>
     <span class="n">comm</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span>
 </pre></div>
@@ -709,7 +724,7 @@ generated after calculating the range of output character strings.</p>
 <code class="descname">to_bytes</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/sbpl.html#TtfGlyph.to_bytes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sbpl.TtfGlyph.to_bytes" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a raw bitmap of 1bpp specified by (pwidth, pheight)</p>
 <p>The bitmap requested by the ‘GB’ command is a monochrome 1bpp, 
-it must be a unit of 8 × 8, and the number of pixels in the vertical 
+it must be a unit of 8×8, and the number of pixels in the vertical 
 and horizontal directions must be the same.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />

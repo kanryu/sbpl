@@ -9,6 +9,8 @@ to the printer existing on your LAN by using SBPL
 This enables arbitrary label cutting which can not be controlled
 by a normal Windows printer.
 
+This module has a function to print TrueType fonts using Freetype. Execute method ttf_write().
+
 This module is a prototype and may not satisfy your work, 
 but since it is Pure Python, you can add and change features yourself.
 
@@ -27,14 +29,16 @@ with comm.open("192.168.0.251", 1024):
 
     # generate label...
     gen = LabelGenerator()
-    gen.set_label_size((1000, 3000))
-    gen.rotate_270()
-    gen.pos((260, 930))
-    gen.codebar(("0004693003005000", 3, 100))
-    gen.pos((160, 1000))
-    gen.expansion((1,1))
-    gen.bold_text("0004693003005000")
-    gen.print()
+    with self._gen.packet_for_with():
+        with self._gen.page_for_with():
+            gen.set_label_size((1000, 3000))
+            gen.rotate_270()
+            gen.pos((260, 930))
+            gen.codebar(("0004693003005000", 3, 100))
+            gen.pos((160, 1000))
+            gen.expansion((1,1))
+            gen.bold_text("0004693003005000")
+            gen.print()
     
     comm.send(gen.to_bytes())
     comm.finish()
@@ -42,9 +46,11 @@ with comm.open("192.168.0.251", 1024):
 
 You can describe print contents in JSON format and can specify them all together.
 
+JSON:
+
 ```JSON
 [
-    {"host":"label_printer1", "port": "1024", "communication": "SG412R_Status5"},
+    {"host":"192.168.0.251", "port": 1024, "communication": "SG412R_Status5"},
     [
         {"set_label_size": [1000, 3000]},
         {"shift_jis": 0},
@@ -71,6 +77,7 @@ You can describe print contents in JSON format and can specify them all together
 ]
 ```
 
+Python:
 
 ```Python
 from sbpl import *
@@ -78,7 +85,8 @@ from sbpl import *
 json_str = "(defined adobe)"
 comm = SG412R_Status5()
 gen = LabelGenerator()
-parser = JsonParser(gen, json_str)
+parser = JsonParser(gen)
+parser.parse(json_str)
 parser.post(comm)
 ```
 
