@@ -29,8 +29,8 @@ with comm.open("192.168.0.251", 1024):
 
     # generate label...
     gen = LabelGenerator()
-    with self._gen.packet_for_with():
-        with self._gen.page_for_with():
+    with gen.packet_for_with():
+        with gen.page_for_with():
             gen.set_label_size((1000, 3000))
             gen.rotate_270()
             gen.pos((260, 930))
