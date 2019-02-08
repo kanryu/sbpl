@@ -23,6 +23,8 @@ $ pip install sbpl
 
 ## Usage
 ```Python
+from sbpl import *
+
 comm = SG412R_Status5()
 with comm.open("192.168.0.251", 1024):
     comm.prepare()
