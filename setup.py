@@ -6,12 +6,9 @@ requires = ["freetype-py>=2.0.0"]
 with open('README.md') as f:
     readme = f.read()
 
-with open('LICENSE') as f:
-    license = f.read()
-
 setup(
     name='sbpl',
-    version='0.1.1.rev2',
+    version='0.1.2',
     description='SBPL module for remote printing',
     long_description=readme,
     long_description_content_type='text/markdown',

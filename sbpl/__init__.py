@@ -12,6 +12,15 @@ by a normal Windows printer.
 This module is a prototype and may not satisfy your work, 
 but since it is Pure Python, you can add and change features yourself.
 """
+
+__copyright__    = 'Copyright (C) 2018 KATO Kanryu'
+__version__      = '0.1.2'
+__license__      = 'MIT'
+__author__       = 'KATO Kanryu'
+__author_email__ = 'k.kanryu@gmail.com'
+__url__          = 'https://github.com/kanryu/sbpl'
+
+
 import json
 import socket
 
@@ -113,7 +122,7 @@ class TtfGlyph:
 
     def offset(self):
         """Return a tuple of the offset to the next character"""
-        return (self._offset_x(), 0)
+        return (self.offset_x(), 0)
 
     def offset_top(self):
         """Vertical offset of character glyph"""
@@ -154,7 +163,7 @@ class TtfGlyph:
 
         pt = 'GB{0:03d}{1:03d}'.format(self._bheight, self._bwidth)
         gen.extend_str((ESC, pt))
-        gen.packets += self._to_bytes()
+        gen.extend_bytes(self.to_bytes())
 
 class LabelGenerator:
     """
@@ -189,6 +198,12 @@ class LabelGenerator:
         a list of arbitrary character strings into a string and then encode() and add into the bytearray
         """
         self._packets += ''.join(tp).encode(self._encoding)
+
+    def extend_bytes(self, b):
+        """
+        add b into the bytearray
+        """
+        self._packets += b
 
     def to_bytes(self):
         """
@@ -589,7 +604,7 @@ class LabelGenerator:
         if align == 'right': x, y = self.glyph_offset((x,y), (maxwidth - totalwidth, 0))
 
         for g in glyphs:
-            if g.buffer:
+            if g._buffer:
                 g.generate(self, (x, y))
             x, y = self.glyph_offset((x+self._pitch,y), g.offset())
 
@@ -780,8 +795,8 @@ class SG412R_Status5:
             comm.prepare()
             # generate label...
             gen = LabelGenerator()
-            with self._gen.packet_for_with():
-                with self._gen.page_for_with():
+            with gen.packet_for_with():
+                with gen.page_for_with():
                     gen.set_label_size((1000, 3000))
                     gen.rotate_270()
                     gen.pos((260, 930))
