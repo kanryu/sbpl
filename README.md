@@ -26,7 +26,9 @@ $ pip install sbpl
 from sbpl import *
 
 comm = SG412R_Status5()
+# open the socket
 with comm.open("192.168.0.251", 1024):
+    # send the initialize packet
     comm.prepare()
 
     # generate label...
@@ -41,9 +43,14 @@ with comm.open("192.168.0.251", 1024):
             gen.expansion((1,1))
             gen.bold_text("0004693003005000")
             gen.print()
-    
+
+    # send the main packet for printing
     comm.send(gen.to_bytes())
+    
+    # send the finalize packet
     comm.finish()
+    
+    # (auto closed to exit from 'with:')
 ```
 
 You can describe print contents in JSON format and can specify them all together.
