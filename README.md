@@ -27,7 +27,7 @@ from sbpl import *
 
 comm = SG412R_Status5()
 # open the socket
-with comm.open("192.168.0.251", 9100):
+with comm.open("192.168.0.251", 1024):
     # send the initialize packet
     comm.prepare()
 
