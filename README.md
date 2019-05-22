@@ -38,7 +38,7 @@ with comm.open("192.168.0.251", 1024):
             gen.set_label_size((1000, 3000))
             gen.rotate_270()
             gen.pos((260, 930))
-            gen.codebar(("0004693003005000", 3, 100))
+            gen.codabar(("0004693003005000", 3, 100))
             gen.pos((160, 1000))
             gen.expansion((1,1))
             gen.bold_text("0004693003005000")
