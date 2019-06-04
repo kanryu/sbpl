@@ -655,7 +655,7 @@ class JsonParser:
                 {"pos": [230, 30], "expansion": [3500], "ttf_write": "Free seat $5.00", "font": "mplus-1p-medium.ttf"},
                 {"pos": [180, 50], "expansion": [1800], "ttf_write": "Drinks can be brought in but alcohol is prohibited.", "font": "mplus-1p-medium.ttf"},
                 {"comment":"==barcode=="},
-                {"pos": [260, 930], "codebar": ["0004693003005000", 3, 100]},
+                {"pos": [260, 930], "codabar": ["0004693003005000", 3, 100]},
                 {"pos": [160, 1000], "expansion": [1,1], "bold_text": "0004693003005000"},
                 {"comment":"==ticket parted=="},
                 {"pos": [780, 1610], "expansion": [2500], "ttf_write": "TEST", "font": "mplus-1p-medium.ttf"},
@@ -800,7 +800,7 @@ class SG412R_Status5:
                     gen.set_label_size((1000, 3000))
                     gen.rotate_270()
                     gen.pos((260, 930))
-                    gen.codebar(("0004693003005000", 3, 100))
+                    gen.codabar(("0004693003005000", 3, 100))
                     gen.pos((160, 1000))
                     gen.expansion((1,1))
                     gen.bold_text("0004693003005000")
