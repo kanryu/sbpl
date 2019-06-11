@@ -309,10 +309,10 @@ class LabelGenerator:
         """
         Designate the printer not to cut the current label.
 
-        The behavior of this command varies depending on the settings 
-        of the printer itself. Use it with setting to cut every page.
-        This command is valid only on the label that was executed, 
-        and it needs to be executed again on the next page.
+        Specifies not to cut the label when printing of the label currently printed is finished.
+        The timing to cut the label depends on the setting value specified on the print body.
+        Normally, "All page cut", "Cut at print completion" and "Don't cut" can be set.
+        By calling this command, you can control at finer timing.
         """
         self.extend_str((ESC, 'CT0'))
         return self
@@ -330,9 +330,11 @@ class LabelGenerator:
         """
         Set rotation of coordinate axis to 0 degree
 
-        This is the default orientation of SATO's printer, 
-        and when you look at the label printed standing behind the printer, 
-        it is the direction in which the string is printed just as you have seen.
+        This is the default orientation of SATO's printer.
+        And when you look at the label printed standing behind the printer, 
+        the labels will be output towards the other side of you 
+        and the letters will be printed in your readable orientation.
+        This command is used when you want to use the label vertically.
         """
         self.extend_str((ESC, '%0'))
         self._rotate = 0
@@ -353,11 +355,11 @@ class LabelGenerator:
 
     def rotate_270(self):
         """
-        Set rotation of coordinate axis to 0 degree
+        Set rotation of coordinate axis to 270 degree
 
-        When you see the label printed on the right side of the printer, 
-        it is the orientation in which the string is printed exactly as you saw. 
-        You will execute this command if you want to use the paper sideways.
+        When you stand on the right side of the printer (the labels are output to the left),
+        the printed characters are output in the same direction as they can be read.
+        Use when you want to use the label sideways.
         """
         self.extend_str((ESC, '%3'))
         self._rotate = 270
