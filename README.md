@@ -53,6 +53,8 @@ with comm.open("192.168.0.251", 1024):
     # (auto closed to exit from 'with:')
 ```
 
+## SBPL Json Format
+
 You can describe print contents in JSON format and can specify them all together.
 
 JSON:
