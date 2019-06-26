@@ -53,7 +53,7 @@ with comm.open("192.168.0.251", 1024):
     # (auto closed to exit from 'with:')
 ```
 
-## Multi Page Labels
+## Multiple Page Labels
 
 Multiple pages of label data can be com.send() between com.prepare() and com.finish().
 Since LabelGenerator caches label data for multiple pages, com.send() needs only to be called once at the end.
@@ -108,7 +108,7 @@ parser.parse(json_str)
 parser.post(comm)
 ```
 
-## Multi Page Json
+## Multiple Page Json
 
 The Json format can include multiple pages of label data. Since Json is an entire array, you just have to add the data of the next page as the third and subsequent elements.
 
