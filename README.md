@@ -58,7 +58,7 @@ with comm.open("192.168.0.251", 1024):
 Multiple pages of label data can be com.send() between com.prepare() and com.finish().
 Since LabelGenerator caches label data for multiple pages, com.send() needs only to be called once at the end.
 
-The label paper will usually be cut page by page, depending on the printer's default settings. If you do not want to cut, call gen.skip_cutting ().
+The label paper will usually be cut page by page, depending on the printer's default settings. If you do not want to cut, call gen.skip_cutting().
 
 ## SBPL Json Format
 
@@ -107,6 +107,10 @@ parser = JsonParser(gen)
 parser.parse(json_str)
 parser.post(comm)
 ```
+
+## Multi Page Json
+
+The Json format can include multiple pages of label data. Since Json is an entire array, you just have to add the data of the next page as the third and subsequent elements.
 
 ## License
 
