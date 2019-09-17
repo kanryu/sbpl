@@ -112,6 +112,16 @@ parser.post(comm)
 
 The Json format can include multiple pages of label data. Since Json is an entire array, you just have to add the data of the next page as the third and subsequent elements.
 
+```JSON
+[
+    {"host":"192.168.0.251", "port": 1024, "communication": "SG412R_Status5"},
+    ["1st page"],
+    ["2nd page"],
+    ["3rd page"]
+    ...
+]
+```
+
 ## License
 
 MIT
