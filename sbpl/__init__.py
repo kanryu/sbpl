@@ -433,6 +433,22 @@ class LabelGenerator:
         self.extend_str((ESC, 'X22,', text))
         return self
 
+    def print_bmp(self, file_path):
+        """
+        Print bmp image
+        
+        :param file_path: Image size to output. The image size must be within 32K. The image file must be grayscale.
+        """
+        import os
+
+        file_size = os.path.getsize(file_path)
+        with open(file_path, 'rb') as f:
+            binary_data = f.read()
+        self.extend_str((ESC, 'GM' + str('{0:05d}'.format(file_size)), ','))
+        bytearray_data = bytearray(binary_data)
+        self._packets = self._packets + bytearray_data
+        return self
+
     def barcode_ratio(self, ratio='1:3'):
         """
         Change the size of the barcode by changing the space between the bars.
