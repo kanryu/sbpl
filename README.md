@@ -7,9 +7,11 @@ to the printer existing on your LAN by using SBPL
 (SATO Barcode Printer Language) provided by SATO Corp.
 
 This enables arbitrary label cutting which can not be controlled
-by a normal Windows printer.
+as a normal Windows printer.
 
 This module has a function to print TrueType fonts using Freetype. Execute method ttf_write().
+
+This module also has a function to 1-bpp mono-chrome bitmap printing. Execute method print_bmp().
 
 This module is a prototype and may not satisfy your work, 
 but since it is Pure Python, you can add and change features yourself.
