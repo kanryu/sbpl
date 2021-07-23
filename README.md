@@ -11,7 +11,8 @@ as a normal Windows printer.
 
 This module has a function to print TrueType fonts using Freetype. Execute method ttf_write().
 
-This module also has a function to 1-bpp mono-chrome bitmap printing. Execute method print_bmp().
+This module also has a function to 'Black/White mode' (means monochrome or glayscale) bitmap printing. Execute method print_bmp().
+This method cannot be used with the CT series.
 
 This module is a prototype and may not satisfy your work, 
 but since it is Pure Python, you can add and change features yourself.
