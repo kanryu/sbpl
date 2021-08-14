@@ -190,7 +190,9 @@ class LabelGenerator:
         '2:5': 'BD' # NW-7/CODE39/itf/JAN-13/JAN-8/Code 2 of 5/Matrix 2 of 5/UPC-A
     }
 
-    def __init__(self,packets=bytearray()):
+    def __init__(self, packets=None):
+        if packets is None:
+	    packets = bytearray()
         self._packets = packets
 
     def extend_str(self, tp):
@@ -237,7 +239,7 @@ class LabelGenerator:
             gen.somemethod() # generate inner packets
         """
         class PacketGather:
-            generator = None
+            _generator = None
             def __init__(self, g):
                 self._generator = g
             def __enter__(self):
