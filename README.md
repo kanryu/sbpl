@@ -103,7 +103,7 @@ Python:
 ```Python
 from sbpl import *
 
-json_str = "(defined adobe)"
+json_str = "(defined above)"
 comm = SG412R_Status5()
 gen = LabelGenerator()
 parser = JsonParser(gen)
